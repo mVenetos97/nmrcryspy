@@ -137,6 +137,11 @@ distance_dict = {
     'OO': {'mu' : 2.604, 'sigma' : 0.025},
     'SiSi': { 'mu' : 3.101, 'sigma' : 0.041}
 }
+# distance_dict = {
+#       'SiO': {'mu' : 1.6, 'sigma' : 0.01},
+#     'OO': {'mu' : 2.61, 'sigma' : 0.02},
+#     'SiSi': { 'mu' : 3.1, 'sigma' : 0.05}
+# }
 zeolite_dists = Distance_Function(distance_dict)
 
 print(f'There are {3*len(get_unique_indicies(s))} degrees of freedom')
@@ -146,7 +151,7 @@ gn = Gauss_Newton_Solver(
     structure=s,
     data_dictionary=data,
     max_iter=20,
-    tolerance_difference=1e-6 #-10
+    tolerance_difference=1e-10
     )
 
 test = pd.DataFrame(gn.fit()).sort_values(by = 'chi', ascending=True)

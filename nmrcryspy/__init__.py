@@ -147,7 +147,7 @@ class Gauss_Newton_Solver:
                 UNIQUE_IND
                 )
 
-            print(f"Round {k}: chi2 {phi/81}")
+            print(f"Round {k}: chi2 {phi/len(res)}")
             if self.tolerance_difference is not None:
                 diff = np.abs(chi2_prev - phi)
                 if diff < self.tolerance_difference:
