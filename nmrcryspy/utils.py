@@ -6,6 +6,7 @@ import shutil
 import sys
 from typing import Callable
 
+from itertools import combinations
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from loguru import logger
 from monty.serialization import dumpfn, loadfn
 from numpy.linalg import pinv
 from pymatgen.io.cif import CifParser, CifWriter
+from pymatgen.analysis.local_env import CrystalNN
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
 from pymatgen.util.coord import (
     find_in_coord_list_pbc,
@@ -51,8 +53,114 @@ def dist_from_coords(coord1, coord2):
     squared_dist = np.sum((coord1 - coord2) ** 2, axis=0)
     return np.sqrt(squared_dist)
 
-def get_unique_indicies(structure):
+def get_unique_indicies(structure, full_list = False):
+    
     sga = SpacegroupAnalyzer(structure)
     symmeterized_struc = sga.get_symmetrized_structure()
-    unique_indicies = [i[0] for i in symmeterized_struc.equivalent_indices]
-    return unique_indicies
+    full_ind_list = symmeterized_struc.equivalent_indices
+    unique_indicies = [i[0] for i in full_ind_list]
+    if full_list is False:
+        return unique_indicies
+    else:
+        return unique_indicies, full_ind_list
+
+def remove_repeat_entries(data_list):
+    temp = []
+    already_exists = []
+    print('data list', data_list)
+    for datum in data_list:
+        check = datum['true_pair']
+        if check not in already_exists:
+
+            temp.append(datum)
+            already_exists.append(datum['true_pair'])
+    return temp
+
+def second_coordination_distance(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    double_count = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        for neighbor in nn:
+            sites = nn_function.get_nn_info(structure, neighbor['site_index'])
+            true_pairs = np.sort([sites[0]['site_index'], sites[1]['site_index']])
+            
+            for idx in equiv_indicies:
+                if true_pairs[0] in idx:
+                    ind1 = idx[0]
+                if true_pairs[1] in idx:
+                    ind2 = idx[0]
+            pairs.append({
+                    'atom 1' : ind1,
+                    'atom 2' : ind2,
+                    'true_pair': list(true_pairs)
+                })
+            if ind1 not in double_count:
+                pairs.append({
+                    'atom 1' : ind1,
+                    'atom 2' : ind2,
+                    'true_pair': list(true_pairs)
+                })
+        double_count.append(atom[0])
+    return pairs #remove_repeat_entries(pairs)
+
+def first_coordination_distance(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        for neighbor in nn:
+            for idx in equiv_indicies:
+                if neighbor['site_index'] in idx:
+                    ind_neighbor = idx[0]
+            
+            pairs.append({
+                'atom 1' : atom[0],
+                'atom 2' : ind_neighbor,
+                'true_pair': [atom[0], neighbor['site_index']]
+            })
+    return remove_repeat_entries(pairs)
+
+def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        ind_list = [i['site_index'] for i in nn]
+
+        for pair in list(combinations(ind_list, 2)):
+            for i in equiv_indicies:
+                if pair[0] in i:
+                    ind1 = (i[0], pair[0])
+                if pair[1] in i:
+                    ind2 = (i[0], pair[1])
+            unsorted = [ind1, ind2]
+            indicies = sorted(unsorted, key=lambda tup: tup[1])
+            pairs.append({
+                'atom 1': indicies[0][0],
+                'atom 2': indicies[1][0],
+                'true_pair': [indicies[0][1], indicies[1][1]]
+            })
+    return remove_repeat_entries(pairs)
+
+def make_distance_data(structure):
+    distance_data = []
+
+    species = [i.symbol for i in structure.species]
+    indicies, symmetry_equiv = get_unique_indicies(structure, full_list=True)
+    indicies = [(i, species[i]) for i in indicies if species[i] == 'Si']
+    oxygens = [(i, species[i]) for i in indicies if species[i] == 'O']
+    nn = CrystalNN()
+    
+    distance_data.append({
+        'bond': 'SiSi',
+        'pairs': second_coordination_distance(oxygens, symmetry_equiv, nn, structure)
+    })
+    distance_data.append({
+        'bond': 'SiO',
+        'pairs': first_coordination_distance(indicies, symmetry_equiv, nn, structure)
+    })
+    distance_data.append({
+        'bond': 'OO',
+        'pairs': first_coordination_vertex_vertex(indicies, symmetry_equiv, nn, structure)
+    })
+
+    return distance_data

@@ -18,10 +18,7 @@ from typing import Callable
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import torch
 import yaml
-from e3nn.io import CartesianTensor
-from loguru import logger
 from monty.serialization import dumpfn, loadfn
 from numpy.linalg import pinv
 from pymatgen.io.cif import CifParser, CifWriter
@@ -36,16 +33,117 @@ from pymatgen.util.coord import (
 from nmrcryspy import Gauss_Newton_Solver
 from nmrcryspy.geometric import Distance_Function
 from nmrcryspy.utils import get_unique_indicies, make_distance_data
-from nmrcryspy.utils import coords_with_pbc, dist_from_coords
 
+from itertools import combinations
+from pymatgen.analysis.local_env import CrystalNN
 
 file_path = '/Users/mvenetos/Box Sync/All Manuscripts/zeolite refinements/ZSM-12_calcined.cif'
 s = CifParser(file_path).get_structures(False)[0]
 
-data = {'Bond_Distances': make_distance_data(s)}
-# data = {
-#     'Bond_Distances': [
-#     {'bond': 'SiSi', 'pairs': [ #11 total
+# def remove_repeat_entries(data_list):
+#     temp = []
+#     already_exists = []
+#     print('data list', data_list)
+#     for datum in data_list:
+#         check = datum['true_pair']
+#         if check not in already_exists:
+
+#             temp.append(datum)
+#             already_exists.append(datum['true_pair'])
+#     return temp
+
+# def second_coordination_distance(index, equiv_indicies, nn_function, structure):
+#     pairs = []
+#     for atom in index:
+#         nn = nn_function.get_nn_info(structure, atom[0])
+#         for neighbor in nn:
+#             sites = nn_function.get_nn_info(structure, neighbor['site_index'])
+#             true_pairs = np.sort([sites[0]['site_index'], sites[1]['site_index']])
+            
+#             for idx in equiv_indicies:
+#                 if true_pairs[0] in idx:
+#                     ind1 = idx[0]
+#                 if true_pairs[1] in idx:
+#                     ind2 = idx[0]
+
+            
+#             pairs.append({
+#                 'atom 1' : ind1,
+#                 'atom 2' : ind2,
+#                 'true_pair': list(true_pairs)
+#             })
+#     return remove_repeat_entries(pairs)
+
+# def first_coordination_distance(index, equiv_indicies, nn_function, structure):
+#     pairs = []
+#     for atom in index:
+#         nn = nn_function.get_nn_info(structure, atom[0])
+#         for neighbor in nn:
+#             for idx in equiv_indicies:
+#                 if neighbor['site_index'] in idx:
+#                     ind_neighbor = idx[0]
+            
+#             pairs.append({
+#                 'atom 1' : atom[0],
+#                 'atom 2' : neighbor['site_index'],
+#                 'true_pair': [atom[0], ind_neighbor]
+#             })
+#     return pairs
+
+# def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structure):
+#     pairs = []
+#     for atom in index:
+#         nn = nn_function.get_nn_info(structure, atom[0])
+#         ind_list = [i['site_index'] for i in nn]
+
+#         for pair in list(combinations(ind_list, 2)):
+#             for i in equiv_indicies:
+#                 if pair[0] in i:
+#                     ind1 = (i[0], pair[0])
+#                 if pair[1] in i:
+#                     ind2 = (i[0], pair[1])
+#             unsorted = [ind1, ind2]
+#             indicies = sorted(unsorted, key=lambda tup: tup[1])
+#             pairs.append({
+#                 'atom 1': indicies[0][0],
+#                 'atom 2': indicies[1][0],
+#                 'true_pair': [indicies[0][1], indicies[1][1]]
+#             })
+#     return pairs
+
+# def make_distance_data(structure):
+#     distance_data = []
+
+#     species = [i.symbol for i in structure.species]
+#     indicies, symmetry_equiv = get_unique_indicies(structure, full_list=True)
+#     indicies = [(i, species[i]) for i in indicies if species[i] == 'Si']
+#     nn = CrystalNN()
+    
+#     distance_data.append({
+#         'bond': 'SiSi',
+#         'pairs': second_coordination_distance(indicies, symmetry_equiv, nn, structure)
+#     })
+#     distance_data.append({
+#         'bond': 'SiO',
+#         'pairs': first_coordination_distance(indicies, symmetry_equiv, nn, structure)
+#     })
+#     distance_data.append({
+#         'bond': 'OO',
+#         'pairs': first_coordination_vertex_vertex(indicies, symmetry_equiv, nn, structure)
+#     })
+
+#     return distance_data
+
+
+test_data = make_distance_data(s)
+
+for i in test_data:
+    print(i['bond'])
+    for j in i['pairs']:
+        print(j)
+    print()
+
+# {'bond': 'SiSi', 'pairs': [ #11 total
 #         {'atom 1': 0, 'atom 2': 8, 'true_pair': [0, 12]}, #new
 #         {'atom 1': 0, 'atom 2': 8, 'true_pair': [0, 14]},
 #         {'atom 1': 0, 'atom 2': 16, 'true_pair': [0, 16]},
@@ -132,79 +230,3 @@ data = {'Bond_Distances': make_distance_data(s)}
 #         {'atom 1': 104, 'atom 2': 104, 'true_pair': [104, 109]}, #new
 #         {'atom 1': 104, 'atom 2': 136, 'true_pair': [109, 136]}, # new
 #     ]},
-#     ]
-# }
-
-distance_dict = {
-      'SiO': {'mu' : 1.595, 'sigma' : 0.011},
-    'OO': {'mu' : 2.604, 'sigma' : 0.025},
-    'SiSi': { 'mu' : 3.101, 'sigma' : 0.041}
-}
-# distance_dict = {
-#       'SiO': {'mu' : 1.6, 'sigma' : 0.01},
-#     'OO': {'mu' : 2.61, 'sigma' : 0.02},
-#     'SiSi': { 'mu' : 3.1, 'sigma' : 0.05}
-# }
-# zeolite_dists = Distance_Function(distance_dict)
-
-# print(f'There are {3*len(get_unique_indicies(s))} degrees of freedom')
-
-# gn = Gauss_Newton_Solver(
-#     fit_function=[zeolite_dists],
-#     structure=s,
-#     data_dictionary=data,
-#     max_iter=20,
-#     tolerance_difference=1e-10
-#     )
-
-# test = pd.DataFrame(gn.fit()).sort_values(by = 'chi', ascending=True)
-dist_test_dict = data['Bond_Distances']
-distributions = []
-
-# s = test.iloc[0]['structure']
-for idx, layer in enumerate(['SiSi', 'SiO', 'OO']):
-    temp = []
-    print(layer)
-    for i in dist_test_dict[idx]['pairs']:
-
-        new_coords = coords_with_pbc(i['true_pair'][0], i['true_pair'][1], s)
-        coord_1 = new_coords[0]
-        coord_2 = new_coords[1]
-        d = dist_from_coords(coord_1, coord_2)
-        print(i['true_pair'][0], i['true_pair'][1], ': ', d)
-        temp.append(d)
-
-        # print(i['true_pair'][0], i['true_pair'][1], ': ', s.get_distance(i['true_pair'][0], i['true_pair'][1]))
-        # temp.append(s.get_distance(i['true_pair'][0], i['true_pair'][1]))
-    # print()
-    distributions.append({
-        'bond': layer,
-        'data': temp
-    })
-df = pd.DataFrame(distributions)
-
-import matplotlib.pyplot as plt
-
-fig, ax = plt.subplots(1, 3, figsize=(12, 3.5))
-ax[2].hist(df.iloc[0]['data'], np.array(range(147, 163))/50, edgecolor = 'black')
-ax[2].set_title("SiSi")
-ax[2].set_xlim([2.94, 3.26])
-ax[2].set_ylim([0, 4])
-ax[2].set_xticks([3, 3.08, 3.16])
-
-ax[0].hist(df.iloc[1]['data'], np.array(range(2*149, 2*171))/200, edgecolor = 'black')
-ax[0].set_title("SiO")
-ax[0].set_xlim([1.49, 1.7])
-ax[0].set_ylim([0, 22])
-ax[0].set_xticks([1.5, 1.54, 1.58, 1.62, 1.66, 1.7])
-ax[1].hist(df.iloc[2]['data'], np.array(range(248, 271))/100, edgecolor = 'black')
-ax[1].set_title("OO")
-ax[1].set_xlim([2.48, 2.7])
-ax[1].set_ylim([0, 28])
-ax[1].set_xticks([2.5, 2.54, 2.58, 2.62, 2.66, 2.70])
-plt.tight_layout()
-plt.show()
-
-print(df.iloc[1]['data'])
-
-print('completed')
