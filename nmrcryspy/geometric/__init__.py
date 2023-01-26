@@ -47,7 +47,7 @@ class Distance_Function:
         """
         self.distance_measures = distance_measures
 
-    def calculate_residual_and_gradients(self, idx_1, idx_2, structure, bond_type):
+    def calculate_residual_and_gradients(self, idx_1, idx_2, structure, bond_type, mic = True):
         """
         Calculates the residual and gradients between two points in a pymatgen structure
         :param idx_1: index of atom 1
@@ -58,7 +58,7 @@ class Distance_Function:
         mu = self.distance_measures[bond_type]['mu']
         sigma = self.distance_measures[bond_type]['sigma']
 
-        new_coords = coords_with_pbc(idx_1, idx_2, structure)
+        new_coords = coords_with_pbc(idx_1, idx_2, structure, mic)
 
         coord_1 = new_coords[0]
         coord_2 = new_coords[1]
@@ -67,13 +67,13 @@ class Distance_Function:
 
         res = (d-mu)/sigma
 
-        ddx = (coord_2[0] - coord_1[0])/(d)#*sigma)
-        ddy = (coord_2[1] - coord_1[1])/(d)#*sigma)
-        ddz = (coord_2[2] - coord_1[2])/(d)#*sigma)
+        # ddx = (coord_2[0] - coord_1[0])/(d)#*sigma)
+        # ddy = (coord_2[1] - coord_1[1])/(d)#*sigma)
+        # ddz = (coord_2[2] - coord_1[2])/(d)#*sigma)
 
-        # ddx = (coord_2[0] - coord_1[0])/(d*sigma)
-        # ddy = (coord_2[1] - coord_1[1])/(d*sigma)
-        # ddz = (coord_2[2] - coord_1[2])/(d*sigma)
+        ddx = (coord_2[0] - coord_1[0])/(d*sigma)
+        ddy = (coord_2[1] - coord_1[1])/(d*sigma)
+        ddz = (coord_2[2] - coord_1[2])/(d*sigma)
 
         return res, ddx, ddy, ddz
 
@@ -92,11 +92,17 @@ class Distance_Function:
         for bond_type in geometric_dict:
             J_row = np.zeros([len(bond_type['pairs']), 3*num_atoms])
             for i, neighbors in enumerate(bond_type['pairs']):
+                if 'min_image_construction' in neighbors.keys():
+                    mic = neighbors['min_image_construction']
+                else:
+                    mic = True
+                    
                 distances, grad_x, grad_y, grad_z = self.calculate_residual_and_gradients(
                     neighbors['true_pair'][0],
                     neighbors['true_pair'][1],
                     structure,
-                    bond_type = bond_type['bond']
+                    bond_type = bond_type['bond'],
+                    mic= mic
                     )
                 residuals.append(distances)
                 pos_1 = unique_ind.index(neighbors['atom 1'])

@@ -32,19 +32,23 @@ from pymatgen.util.coord import (
 )
 
 
-def coords_with_pbc(idx_1, idx_2, stucture):
-    lattice = stucture.lattice
-    frac_coords1 = stucture[idx_1].frac_coords
-    frac_coords2 = stucture[idx_2].frac_coords
+def coords_with_pbc(idx_1, idx_2, stucture, mic = True):
+    if mic:
+        lattice = stucture.lattice
+        frac_coords1 = stucture[idx_1].frac_coords
+        frac_coords2 = stucture[idx_2].frac_coords
 
-    v, d2 = pbc_shortest_vectors(lattice, frac_coords1, frac_coords2, return_d2=True)
-    fc = lattice.get_fractional_coords(v[0][0]) + frac_coords1 - frac_coords2
-    fc = np.array(np.round(fc), dtype=int)
+        v, d2 = pbc_shortest_vectors(lattice, frac_coords1, frac_coords2, return_d2=True)
+        fc = lattice.get_fractional_coords(v[0][0]) + frac_coords1 - frac_coords2
+        fc = np.array(np.round(fc), dtype=int)
 
-    jimage = np.array(fc)
-    mapped_vec = lattice.get_cartesian_coords(jimage + frac_coords2 - frac_coords1)
-    cart_coord_1 = lattice.get_cartesian_coords(frac_coords1)
-    cart_coord_2 = lattice.get_cartesian_coords(jimage + frac_coords2)
+        jimage = np.array(fc)
+        mapped_vec = lattice.get_cartesian_coords(jimage + frac_coords2 - frac_coords1)
+        cart_coord_1 = lattice.get_cartesian_coords(frac_coords1)
+        cart_coord_2 = lattice.get_cartesian_coords(jimage + frac_coords2)
+    else:
+        cart_coord_1 = stucture[idx_1].coords
+        cart_coord_2 = stucture[idx_2].coords
 
     return cart_coord_1, cart_coord_2
 
@@ -76,33 +80,100 @@ def remove_repeat_entries(data_list):
             already_exists.append(datum['true_pair'])
     return temp
 
+# def second_coordination_distance(index, equiv_indicies, nn_function, structure):
+#     pairs = []
+#     double_count = []
+#     for atom in index:
+#         nn = nn_function.get_nn_info(structure, atom[0])
+#         for neighbor in nn:
+#             sites = nn_function.get_nn_info(structure, neighbor['site_index'])
+#             true_pairs = np.sort([sites[0]['site_index'], sites[1]['site_index']])
+            
+#             for idx in equiv_indicies:
+#                 if true_pairs[0] in idx:
+#                     ind1 = idx[0]
+#                 if true_pairs[1] in idx:
+#                     ind2 = idx[0]
+
+#             new_coords = coords_with_pbc(true_pairs[0], true_pairs[1], structure)
+#             coord_1 = new_coords[0]
+#             coord_2 = new_coords[1]
+#             d = dist_from_coords(coord_1, coord_2)
+#             pairs.append({
+#                 'vals': {
+#                     'atom 1' : ind1,
+#                     'atom 2' : ind2,
+#                     'true_pair': list(true_pairs),
+#                     'min_image_construction': True
+#                 },
+#                 'dists': d
+#             })
+#             print(true_pairs, d)
+#         print()
+#             # if ind1 not in double_count:
+#             #     pairs.append({
+#             #         'atom 1' : ind1,
+#             #         'atom 2' : ind2,
+#             #         'true_pair': list(true_pairs)
+#             #     })
+#     distances = []
+#     reduced_pairs = []
+#     for bond_pair in pairs:
+#         if bond_pair['dists'] not in distances:
+#             reduced_pairs.append(bond_pair['vals'])
+#             distances.append(bond_pair['dists'])
+#         # elif bond_pair['dists'] in distances:
+#         #     mol_pair = bond_pair['vals']['true_pair']
+#         #     molecule_coords_1 = structure[mol_pair[0]].coords
+#         #     molecule_coords_2 = structure[mol_pair[1]].coords
+#         #     d_test = dist_from_coords(molecule_coords_1, molecule_coords_2)
+#         #     if d_test != bond_pair['dists'] and (np.abs(d_test - bond_pair['dists']) < 0.01) and (np.abs(d_test - bond_pair['dists']) > 0.0001):
+#         #         bond_pair['vals']['min_image_construction'] = False
+#         #         reduced_pairs.append(bond_pair['vals'])
+#         #         distances.append(d_test)
+
+#     return reduced_pairs #remove_repeat_entries(pairs)
+
 def second_coordination_distance(index, equiv_indicies, nn_function, structure):
     pairs = []
-    double_count = []
     for atom in index:
         nn = nn_function.get_nn_info(structure, atom[0])
-        for neighbor in nn:
-            sites = nn_function.get_nn_info(structure, neighbor['site_index'])
-            true_pairs = np.sort([sites[0]['site_index'], sites[1]['site_index']])
-            
-            for idx in equiv_indicies:
-                if true_pairs[0] in idx:
-                    ind1 = idx[0]
-                if true_pairs[1] in idx:
-                    ind2 = idx[0]
-            pairs.append({
-                    'atom 1' : ind1,
-                    'atom 2' : ind2,
-                    'true_pair': list(true_pairs)
-                })
-            if ind1 not in double_count:
-                pairs.append({
-                    'atom 1' : ind1,
-                    'atom 2' : ind2,
-                    'true_pair': list(true_pairs)
-                })
-        double_count.append(atom[0])
-    return pairs #remove_repeat_entries(pairs)
+        true_pairs = np.sort([nn[0]['site_index'], nn[1]['site_index']])
+
+        for idx in equiv_indicies:
+            if true_pairs[0] in idx:
+                ind1 = idx[0]
+            if true_pairs[1] in idx:
+                ind2 = idx[0]
+        pairs.append({
+            'vals' :{
+                'atom 1' : ind1,
+                'atom 2' : ind2,
+                'true_pair': list(true_pairs),
+                'min_image_construction': True
+            },
+            'dists': structure.get_distance(true_pairs[0], true_pairs[1])
+            })
+        print(list(true_pairs), structure.get_distance(true_pairs[0], true_pairs[1]))
+    print()
+    print(f'pairs is {len(pairs)}')
+    distances = []
+    reduced_pairs = []
+    for bond_pair in pairs:
+        if bond_pair['dists'] not in distances:
+            reduced_pairs.append(bond_pair['vals'])
+            distances.append(bond_pair['dists'])
+        elif bond_pair['dists'] in distances:
+            mol_pair = bond_pair['vals']['true_pair']
+            molecule_coords_1 = structure[mol_pair[0]].coords
+            molecule_coords_2 = structure[mol_pair[1]].coords
+            d_test = dist_from_coords(molecule_coords_1, molecule_coords_2)
+            if d_test != bond_pair['dists'] and (np.abs(d_test - bond_pair['dists']) < 0.1):
+                bond_pair['vals']['min_image_construction'] = False
+                reduced_pairs.append(bond_pair['vals'])
+                # distances.append(d_test)
+
+    return reduced_pairs#remove_repeat_entries(pairs)
 
 def first_coordination_distance(index, equiv_indicies, nn_function, structure):
     pairs = []
@@ -116,7 +187,8 @@ def first_coordination_distance(index, equiv_indicies, nn_function, structure):
             pairs.append({
                 'atom 1' : atom[0],
                 'atom 2' : ind_neighbor,
-                'true_pair': [atom[0], neighbor['site_index']]
+                'true_pair': [atom[0], neighbor['site_index']],
+                'min_image_construction': True
             })
     return remove_repeat_entries(pairs)
 
@@ -137,16 +209,17 @@ def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structu
             pairs.append({
                 'atom 1': indicies[0][0],
                 'atom 2': indicies[1][0],
-                'true_pair': [indicies[0][1], indicies[1][1]]
+                'true_pair': [indicies[0][1], indicies[1][1]],
+                'min_image_construction': True
             })
-    return remove_repeat_entries(pairs)
+    return pairs#remove_repeat_entries(pairs)
 
 def make_distance_data(structure):
     distance_data = []
 
     species = [i.symbol for i in structure.species]
     indicies, symmetry_equiv = get_unique_indicies(structure, full_list=True)
-    indicies = [(i, species[i]) for i in indicies if species[i] == 'Si']
+    silicons = [(i, species[i]) for i in indicies if species[i] == 'Si']
     oxygens = [(i, species[i]) for i in indicies if species[i] == 'O']
     nn = CrystalNN()
     
@@ -154,13 +227,15 @@ def make_distance_data(structure):
         'bond': 'SiSi',
         'pairs': second_coordination_distance(oxygens, symmetry_equiv, nn, structure)
     })
+    for i in distance_data[0]['pairs']:
+        print(i)
     distance_data.append({
         'bond': 'SiO',
-        'pairs': first_coordination_distance(indicies, symmetry_equiv, nn, structure)
+        'pairs': first_coordination_distance(silicons, symmetry_equiv, nn, structure)
     })
     distance_data.append({
         'bond': 'OO',
-        'pairs': first_coordination_vertex_vertex(indicies, symmetry_equiv, nn, structure)
+        'pairs': first_coordination_vertex_vertex(silicons, symmetry_equiv, nn, structure)
     })
 
     return distance_data

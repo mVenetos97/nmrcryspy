@@ -147,7 +147,7 @@ class Gauss_Newton_Solver:
                 UNIQUE_IND
                 )
 
-            print(f"Round {k}: chi2 {phi/len(res)}")
+            print(f"Round {k}: chi2 {phi/len(res)} with alpha {alpha}")
             if self.tolerance_difference is not None:
                 diff = np.abs(chi2_prev - phi)
                 if diff < self.tolerance_difference:
@@ -184,7 +184,7 @@ class Gauss_Newton_Solver:
         for atom in sym_dict:
             base_idx = atom['base_idx']
             atom_idx = atom['atom']
-            perturbation_opt = atom['sym_op'].apply_rotation_only(perturbations[base_idx])
+            perturbation_opt = atom['sym_op'].inverse.apply_rotation_only(perturbations[base_idx])
             structure.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
         self.structure = structure
 

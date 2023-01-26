@@ -172,7 +172,7 @@ def cubic_interpolation(alpha_low, phi_alpha_low, d_alpha_low, alpha_high, phi_a
     return alpha_min
 
 def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND, epsilon = 0.01, c1 = 0.0001, c2 = 0.9):
-    max_iter = 10
+    max_iter = 15
     delta1 = 0.2 #cubic_interpolation check
     delta2 = 0.1 #quadratic_interpolation check
     phi_test = phi_0
@@ -221,7 +221,7 @@ def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist
             else:
                 phi_test = phi_low
                 alpha_test = alpha_low
-            alpha_low - alpha_j
+            alpha_low = alpha_j
             phi_low = phi_j
             dphi_low = dphi_j
     print('Zoom exceeded max iter')
@@ -230,9 +230,9 @@ def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist
 def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND, epsilon = 0.01, max_iter = 10, c1 = 0.0001, c2 = 0.9):
     dphi_0 = get_derivative(function, phi_0, 0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
-    alpha_max = 1#0.75
+    alpha_max = 10#0.75
 
-    alpha_prev = 0
+    alpha_0 = 0
     phi_alpha_prev = phi_0
     dalpha_prev = dphi_0
 
@@ -255,7 +255,7 @@ def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct
         if dphi_alpha >= 0:
             return zoom(function, phi_0, dphi_0, alpha, alpha_prev, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
-        alpha_next = 2*alpha #np.random.uniform(alpha, alpha_max)
+        alpha_next = np.random.uniform(alpha, alpha_max) # 2*alpha #np.random.uniform(alpha, alpha_max)
         alpha_prev = alpha
         alpha = alpha_next
 
