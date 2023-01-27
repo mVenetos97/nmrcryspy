@@ -156,7 +156,7 @@ def cubic_interpolation(alpha_low, phi_alpha_low, d_alpha_low, alpha_high, phi_a
             denom = (db * dc) ** 2 * (db - dc)
             d1 = np.empty((2, 2))
             d1[0, 0] = dc ** 2
-            d1[0, 1] = -db ** 2
+            d1[0, 1] = -(db ** 2)
             d1[1, 0] = -dc ** 3
             d1[1, 1] = db ** 3
             [A, B] = np.dot(d1, np.asarray([phi_alpha_high - phi_alpha_low - C * db,
@@ -196,11 +196,11 @@ def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist
         if i > 0:
             cube_check = delta1*d_alpha
             alpha_j = cubic_interpolation(alpha_low, phi_low, dphi_low, alpha_high, phi_high, alpha_test, phi_test)
-        if i == 0 or alpha_j is None or (alpha_j > (b-cube_check)) or (alpha_j < (a-cube_check)):
+        if i == 0 or alpha_j is None or (alpha_j > (b-cube_check)) or (alpha_j < (a+cube_check)):
             quad_check = delta2*d_alpha
             alpha_j = quadratic_interpolation(alpha_low, phi_low, dphi_low, alpha_high, phi_high)
-            if alpha_j is None or (alpha_j > (b-quad_check)) or (alpha_j < (a-quad_check)):
-                alpha_j = alpha_low + 0.5*alpha_high
+            if alpha_j is None or (alpha_j > (b-quad_check)) or (alpha_j < (a+quad_check)):
+                alpha_j = alpha_low + 0.5*d_alpha #alpha_high
 
         phi_j = update_chi2(function, alpha_j, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
         if phi_j > phi_0 + c1*alpha_j*dphi_0 or phi_j >= phi_low:
@@ -209,7 +209,7 @@ def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist
             alpha_high = alpha_j
             phi_high = phi_j
         else:
-            dphi_j = get_derivative(function, phi_j, alpha_j, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
+            dphi_j = get_derivative(function, phi_j, 0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
             if np.abs(dphi_j) <= -c2*dphi_0:
                 return alpha_j, phi_j
 
@@ -230,20 +230,20 @@ def zoom(function, phi_0, dphi_0, alpha_low, alpha_high, x_prime, sym_dict, dist
 def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND, epsilon = 0.01, max_iter = 10, c1 = 0.0001, c2 = 0.9):
     dphi_0 = get_derivative(function, phi_0, 0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
-    alpha_max = 10#0.75
+    alpha_max = 1#0.75
 
-    alpha_0 = 0
+    alpha_prev = 0
     phi_alpha_prev = phi_0
     dalpha_prev = dphi_0
 
-    alpha = np.random.uniform(0, alpha_max) #1
+    alpha = 1 #np.random.uniform(0, alpha_max) #1
     phi_alpha = update_chi2(function, alpha, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
 
     for i in range(max_iter):
         # phi_alpha = update_chi2(function, alpha, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
-        if phi_alpha > phi_0 + c1*alpha*dphi_0  or (i > 1 and phi_alpha >= phi_alpha_prev):
+        if phi_alpha > phi_0 + c1*alpha*dphi_0  or (i > 0 and phi_alpha >= phi_alpha_prev):
             return zoom(function, phi_0, dphi_0, alpha_prev, alpha, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
 
@@ -255,7 +255,7 @@ def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct
         if dphi_alpha >= 0:
             return zoom(function, phi_0, dphi_0, alpha, alpha_prev, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
 
-        alpha_next = np.random.uniform(alpha, alpha_max) # 2*alpha #np.random.uniform(alpha, alpha_max)
+        alpha_next = min(alpha_max, 2*alpha) #np.random.uniform(alpha, alpha_max) #  #np.random.uniform(alpha, alpha_max)
         alpha_prev = alpha
         alpha = alpha_next
 
@@ -267,26 +267,3 @@ def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct
     print('Max iterations excedded on Wolfe line search')
     return alpha, phi_alpha
 
-# def wolfe_line_search(function, phi_0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND, epsilon = 0.01, max_iter = 10, c1 = 0.0001, c2 = 0.9):
-#     alpha_max = 1#0.75
-#     dphi_0 = get_derivative(function, phi_0, 0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
-#     # dphi_0 = (phi_e - phi_0)/epsilon
-#     alpha_prev = 0
-#     phi_alpha_prev = phi_0
-#     alpha = np.random.uniform(0, alpha_max) #1
-#     for i in range(max_iter):
-#         phi_alpha = update_chi2(function, alpha, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
-
-#         if phi_alpha > phi_0 + c1*alpha*dphi_0  or (i > 0 and phi_alpha > phi_alpha_prev):
-#             return zoom(function, phi_0, dphi_0, alpha_prev, alpha, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
-#         dphi_alpha = get_derivative(function, phi_alpha, 0, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
-#         # dphi_alpha = (phi_alpha_e - phi_alpha)/epsilon
-#         if np.abs(dphi_alpha) > -c2*dphi_0:
-#             return alpha, phi_alpha
-#         if dphi_alpha >= 0:
-#             return zoom(function, phi_0, dphi_0, alpha, alpha_prev, x_prime, sym_dict, dist_test_dict, struct, NUM_ATOMS, UNIQUE_IND)
-#         alpha_prev = alpha#, phi_alpha
-#         phi_alpha_prev = phi_alpha
-#         alpha = np.random.uniform(alpha, alpha_max)
-#     print('Max iterations excedded on Wolfe line search')
-#     return alpha_prev, phi_alpha_prev
