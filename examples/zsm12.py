@@ -163,6 +163,11 @@ distance_dict = {
 }
 zeolite_dists = Distance_Function(distance_dict)
 
+# J, res = zeolite_dists.assemble_residual_and_grad(s, data)
+# print(J)
+# print()
+# print(res)
+
 print(f'There are {3*len(get_unique_indicies(s))} degrees of freedom')
 
 gn = Gauss_Newton_Solver(

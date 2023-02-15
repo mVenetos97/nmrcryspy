@@ -65,7 +65,7 @@ class Gauss_Newton_Solver:
     """
     Gauss-Newton solver.
     Given response vector y, dependent variable x and fit function f,
-    Minimize sum(residual^2) where residual = f(x, coefficients) - y.
+    Minimize sum(residual^2) where residual = f(structure) - y.
     """
 
     def __init__(self,
@@ -73,11 +73,11 @@ class Gauss_Newton_Solver:
                  structure: Structure,
                  data_dictionary: dict,
                  max_iter: int = 1000,
-                 tolerance_difference: float = 10 ** (-16),
+                 tolerance_difference: float = 10 ** (-10),
                  tolerance: float = 10 ** (-9),
                  ):
         """
-        :param fit_function: Function that needs be fitted; y_estimate = fit_function(x, coefficients).
+        :param fit_function: Functions that need to be fitted; y_estimate = fit_function(structure).
         :param max_iter: Maximum number of iterations for optimization.
         :param tolerance_difference: Terminate iteration if RMSE difference between iterations smaller than tolerance.
         :param tolerance: Terminate iteration if RMSE is smaller than tolerance.
@@ -147,7 +147,7 @@ class Gauss_Newton_Solver:
                 UNIQUE_IND
                 )
 
-            print(f"Round {k}: chi2 {phi/len(res)} with alpha {alpha}")
+            print(f"Round {k}: chi2 {phi/(3*NUM_ATOMS)}")# with alpha {alpha}")
             if self.tolerance_difference is not None:
                 diff = np.abs(chi2_prev - phi)
                 if diff < self.tolerance_difference:
@@ -184,7 +184,7 @@ class Gauss_Newton_Solver:
         for atom in sym_dict:
             base_idx = atom['base_idx']
             atom_idx = atom['atom']
-            perturbation_opt = atom['sym_op'].inverse.apply_rotation_only(perturbations[base_idx])
+            perturbation_opt = atom['sym_op'].apply_rotation_only(perturbations[base_idx])
             structure.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
         self.structure = structure
 
