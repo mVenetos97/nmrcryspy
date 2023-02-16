@@ -128,7 +128,7 @@ class Gauss_Newton_Solver:
             # minimization_steps.append(df.iloc[0].to_dict())
 
             alpha, phi = wolfe_line_search(
-                self.fit_function[0],  # TODO: make not first element
+                self.fit_function,  # TODO: make not first element
                 phi_0,
                 perturbations,
                 sym_dict,
@@ -151,7 +151,7 @@ class Gauss_Newton_Solver:
                 print("RMSE error smaller than tolerance. Fit terminated.")
                 return minimization_steps
             chi2_prev = phi
-            self.updata_structure(self.structure, sym_dict, perturbations, alpha)
+            self.update_structure(self.structure, sym_dict, perturbations, alpha)
             minimization_steps.append(
                 {
                     "step": k,
@@ -172,7 +172,7 @@ class Gauss_Newton_Solver:
         """
         return self.fit_function(x, self.coefficients)
 
-    def updata_structure(self, structure, sym_dict, x_prime, alpha):
+    def update_structure(self, structure, sym_dict, x_prime, alpha):
         perturbations = np.reshape(x_prime * alpha, (int(len(x_prime) / 3), 3))
         for atom in sym_dict:
             base_idx = atom["base_idx"]
