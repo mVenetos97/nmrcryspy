@@ -1,11 +1,16 @@
 import os
+import random
+import string
 from typing import Callable
 
 import numpy as np
+import pandas as pd
 import torch
 from e3nn.io import CartesianTensor
 from eigenn.dataset.LSDI import SiNMRDataMoldule
 from eigenn.model_factory.atomic_tensor_model import AtomicTensorModel
+from monty.serialization import dumpfn
+from monty.serialization import loadfn
 
 from nmrcryspy.utils import get_unique_indicies
 
@@ -18,13 +23,46 @@ def J_regr(J):
     return (1.4217 * J) + 3.7953
 
 
-class ML_function:
-    def make_file_from_structure(self, structure):
-        os.getcwd()
-        pass
+def randomword(length):
+    letters = string.ascii_lowercase
+    return "".join(random.choice(letters) for i in range(length))
 
-    # TODO: take the structure and make a new data file.
-    # returning both the root to the file as well as filename
+
+class ML_function:
+    def __init__(
+        self,
+        root: str = None,
+        data_file: str = None,
+    ):
+        """
+        :param root: filepath to data used for ML model
+        :param data_file: name of initial data file for ML model
+        """
+        self.root = root
+        self.data_file = data_file
+
+    def make_file_from_structure(self, structure):
+        original_file = "".join([self.root, self.data_file])
+        temp = pd.DataFrame(loadfn(original_file))
+        idxs = list(temp.index.values)
+
+        for i in idxs:
+            temp.at[i, "structure"] = structure
+
+        tmp_filepath = self.root + "tmp"
+        new_name = randomword(10) + ".json"
+        os.makedirs(tmp_filepath, exist_ok=True)
+
+        data = temp.to_dict("records")
+        dumpfn(data, "".join([tmp_filepath, new_name]))
+
+        return tmp_filepath, new_name
+
+    def remove_tmp_folder(self):
+        root = self.root
+        for file_items in os.listdir(os.path.join(root, "tmp")):
+            os.remove(os.path.join(root, "tmp", file_items))
+        os.rmdir(os.path.join(root, "tmp"))
 
     def get_unique_atoms(self, structure):
         unique_ind = get_unique_indicies(structure)
@@ -162,6 +200,8 @@ class ShieldingTensor_Function(ML_function):
             else:
                 sub_Jacobian = np.vstack((sub_Jacobian, J_row))
 
+        self.remove_tmp_folder()
+
         return sub_Jacobian, residuals
 
 
@@ -262,5 +302,7 @@ class JTensor_Function(ML_function):
                 J_row[3 * i + 1] = preds["grad"][0][neighbors][1].item()
                 J_row[3 * i + 2] = preds["grad"][0][neighbors][2].item()
             sub_Jacobian = np.vstack((sub_Jacobian, J_row))
+
+        self.remove_tmp_folder()
 
         return sub_Jacobian, residuals
