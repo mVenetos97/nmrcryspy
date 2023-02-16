@@ -49,12 +49,12 @@ class ML_function:
         for i in idxs:
             temp.at[i, "structure"] = structure
 
-        tmp_filepath = self.root + "tmp"
+        tmp_filepath = os.path.join(self.root, "tmp")
         new_name = randomword(10) + ".json"
         os.makedirs(tmp_filepath, exist_ok=True)
 
         data = temp.to_dict("records")
-        dumpfn(data, "".join([tmp_filepath, new_name]))
+        dumpfn(data, os.path.join(tmp_filepath, new_name))
 
         return tmp_filepath, new_name
 
@@ -80,6 +80,8 @@ class ShieldingTensor_Function(ML_function):
         regr_func: Callable = shielding_regr,
         r_cut: float = 5,
         checkpoint: str = None,
+        root: str = None,
+        data_file: str = None,
     ):
         """
         :param sigma_errors: Dictionary containing the standard
@@ -92,7 +94,10 @@ class ShieldingTensor_Function(ML_function):
         :param r_cut: cutoff radius used to define the local neighborhood
         in the GNN
         :param checkpoint: name of the checkpoint file containing the GNN model
+        :param root: filepath to data used for ML model
+        :param data_file: name of initial data file for ML model
         """
+        super().__init__(root, data_file)
         self.sigma_errors = sigma_errors
         self.regr_func = regr_func
         self.r_cut = r_cut
@@ -171,16 +176,23 @@ class ShieldingTensor_Function(ML_function):
 
         root, data_file = self.make_file_from_structure(structure)
         num_atoms = self.get_unique_atoms(structure)
+        data_dictionary = data_dictionary["Shielding_Tensor"]
 
         sub_Jacobian = 0
-        residuals = []
+        residuals = np.array([])
 
         shielding_data = sorted(
             self.calculate_grad_and_residual(root, data_file), key=lambda d: d["index"]
         )
 
         for preds in shielding_data:
-            residuals.append(preds["residual"].detach().numpy())
+            temp_res = preds["residual"].detach().numpy()
+            residuals = (
+                np.hstack([residuals, temp_res])
+                if residuals.size
+                else np.array(temp_res)
+            )
+            # residuals.append(preds["residual"].detach().numpy())
             dict_row = list(
                 filter(lambda atom: atom["index"] == preds["index"], data_dictionary)
             )[0]
@@ -200,7 +212,7 @@ class ShieldingTensor_Function(ML_function):
             else:
                 sub_Jacobian = np.vstack((sub_Jacobian, J_row))
 
-        self.remove_tmp_folder()
+        # self.remove_tmp_folder()
 
         return sub_Jacobian, residuals
 
@@ -216,6 +228,8 @@ class JTensor_Function(ML_function):
         regr_func: Callable = J_regr,
         r_cut: float = 6,
         checkpoint: str = None,
+        root: str = None,
+        data_file: str = None,
     ):
         """
         :param sigma_errors: The standard deviation of J coupling
@@ -224,8 +238,11 @@ class JTensor_Function(ML_function):
         :param r_cut: cutoff radius used to define the local neighborhood
         in the GNN
         :param checkpoint: name of the checkpoint file containing the GNN model
+        :param root: filepath to data used for ML model
+        :param data_file: name of initial data file for ML model
         """
-        self.sigma_errors = J_error
+        super().__init__(root, data_file)
+        self.J_error = J_error
         self.regr_func = regr_func
         self.r_cut = r_cut
         self.checkpoint = checkpoint
@@ -283,6 +300,7 @@ class JTensor_Function(ML_function):
 
         root, data_file = self.make_file_from_structure(structure)
         num_atoms = self.get_unique_atoms(structure)
+        data_dictionary = data_dictionary["J_Tensor"]
 
         sub_Jacobian = 0
         residuals = []
@@ -301,8 +319,11 @@ class JTensor_Function(ML_function):
                 J_row[3 * i] = preds["grad"][0][neighbors][0].item()
                 J_row[3 * i + 1] = preds["grad"][0][neighbors][1].item()
                 J_row[3 * i + 2] = preds["grad"][0][neighbors][2].item()
-            sub_Jacobian = np.vstack((sub_Jacobian, J_row))
+            if type(sub_Jacobian) == int:
+                sub_Jacobian = J_row
+            else:
+                sub_Jacobian = np.vstack((sub_Jacobian, J_row))
 
-        self.remove_tmp_folder()
+        # self.remove_tmp_folder()
 
         return sub_Jacobian, residuals

@@ -68,18 +68,28 @@ class Gauss_Newton_Solver:
         self.tolerance = tolerance
 
     def get_residuals_and_jacobian(self, data_dictionary, structure):
-        jacobians = []
-        residuals = []
+        jacobians = np.array([])
+        residuals = np.array([])
 
         for function in self.fit_function:
             temp_Jacobian, temp_res = function.assemble_residual_and_grad(
                 structure, data_dictionary
             )
-            jacobians.append(temp_Jacobian)
-            residuals.append(temp_res)
-        Jacobian = np.vstack(jacobians)
-        residual = np.hstack(residuals)
-        return residual, Jacobian
+            jacobians = (
+                np.vstack([jacobians, temp_Jacobian])
+                if jacobians.size
+                else temp_Jacobian
+            )
+            residuals = (
+                np.hstack([residuals, temp_res])
+                if residuals.size
+                else np.array(temp_res)
+            )
+        #     jacobians.append(temp_Jacobian)
+        #     residuals.append(temp_res)
+        # Jacobian = np.vstack(jacobians)
+        # residual = np.hstack(residuals)
+        return residuals, jacobians
 
     def fit(self):
         """
@@ -97,7 +107,7 @@ class Gauss_Newton_Solver:
 
         chi2_prev = np.inf
         res, J = self.get_residuals_and_jacobian(self.data_dictionary, self.structure)
-        print(f"Initial: chi2 {np.sum(res**2)/81}")
+        print(f"Initial: chi2 {np.sum(res**2)/(3*NUM_ATOMS)}")
 
         for k in range(self.max_iter):
 
