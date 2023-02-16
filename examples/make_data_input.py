@@ -2,135 +2,134 @@ import os
 import sys
 from pathlib import Path
 
+import numpy as np
+
 path_root = Path(os.path.dirname(os.path.realpath(__file__))).parents[0]
 print(path_root)
 sys.path.append(str(path_root))
 # print(sys.path)
 
-import copy
-import logging
-import math
-import os
-import shutil
-import sys
-from typing import Callable
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import yaml
-from monty.serialization import dumpfn, loadfn
-from numpy.linalg import pinv
-from pymatgen.io.cif import CifParser, CifWriter
-from pymatgen.symmetry.analyzer import SpacegroupAnalyzer
-from pymatgen.util.coord import (
-    find_in_coord_list_pbc,
-    in_coord_list,
-    in_coord_list_pbc,
-    pbc_shortest_vectors,
-)
+from pymatgen.io.cif import CifParser
 
-from nmrcryspy import Gauss_Newton_Solver
-from nmrcryspy.geometric import Distance_Function
-from nmrcryspy.utils import get_unique_indicies, make_distance_data
+from nmrcryspy.utils import make_distance_data  # get_unique_indicies,
 
 from itertools import combinations
-from pymatgen.analysis.local_env import CrystalNN
 
-file_path = '/Users/mvenetos/Box Sync/All Manuscripts/zeolite refinements/ZSM-12_calcined.cif'
+file_path = (
+    "/Users/mvenetos/Box Sync/All Manuscripts/zeolite refinements/ZSM-12_calcined.cif"
+)
 s = CifParser(file_path).get_structures(False)[0]
 
-# def remove_repeat_entries(data_list):
-#     temp = []
-#     already_exists = []
-#     print('data list', data_list)
-#     for datum in data_list:
-#         check = datum['true_pair']
-#         if check not in already_exists:
 
-#             temp.append(datum)
-#             already_exists.append(datum['true_pair'])
-#     return temp
+def remove_repeat_entries(data_list):
+    temp = []
+    already_exists = []
+    print("data list", data_list)
+    for datum in data_list:
+        check = datum["true_pair"]
+        if check not in already_exists:
 
-# def second_coordination_distance(index, equiv_indicies, nn_function, structure):
-#     pairs = []
-#     for atom in index:
-#         nn = nn_function.get_nn_info(structure, atom[0])
-#         for neighbor in nn:
-#             sites = nn_function.get_nn_info(structure, neighbor['site_index'])
-#             true_pairs = np.sort([sites[0]['site_index'], sites[1]['site_index']])
-            
-#             for idx in equiv_indicies:
-#                 if true_pairs[0] in idx:
-#                     ind1 = idx[0]
-#                 if true_pairs[1] in idx:
-#                     ind2 = idx[0]
+            temp.append(datum)
+            already_exists.append(datum["true_pair"])
+    return temp
 
-            
-#             pairs.append({
-#                 'atom 1' : ind1,
-#                 'atom 2' : ind2,
-#                 'true_pair': list(true_pairs)
-#             })
-#     return remove_repeat_entries(pairs)
 
-# def first_coordination_distance(index, equiv_indicies, nn_function, structure):
-#     pairs = []
-#     for atom in index:
-#         nn = nn_function.get_nn_info(structure, atom[0])
-#         for neighbor in nn:
-#             for idx in equiv_indicies:
-#                 if neighbor['site_index'] in idx:
-#                     ind_neighbor = idx[0]
-            
-#             pairs.append({
-#                 'atom 1' : atom[0],
-#                 'atom 2' : neighbor['site_index'],
-#                 'true_pair': [atom[0], ind_neighbor]
-#             })
-#     return pairs
+def second_coordination_distance(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        for neighbor in nn:
+            sites = nn_function.get_nn_info(structure, neighbor["site_index"])
+            true_pairs = np.sort([sites[0]["site_index"], sites[1]["site_index"]])
 
-# def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structure):
-#     pairs = []
-#     for atom in index:
-#         nn = nn_function.get_nn_info(structure, atom[0])
-#         ind_list = [i['site_index'] for i in nn]
+            for idx in equiv_indicies:
+                if true_pairs[0] in idx:
+                    ind1 = idx[0]
+                if true_pairs[1] in idx:
+                    ind2 = idx[0]
 
-#         for pair in list(combinations(ind_list, 2)):
-#             for i in equiv_indicies:
-#                 if pair[0] in i:
-#                     ind1 = (i[0], pair[0])
-#                 if pair[1] in i:
-#                     ind2 = (i[0], pair[1])
-#             unsorted = [ind1, ind2]
-#             indicies = sorted(unsorted, key=lambda tup: tup[1])
-#             pairs.append({
-#                 'atom 1': indicies[0][0],
-#                 'atom 2': indicies[1][0],
-#                 'true_pair': [indicies[0][1], indicies[1][1]]
-#             })
-#     return pairs
+            pairs.append(
+                {"atom 1": ind1, "atom 2": ind2, "true_pair": list(true_pairs)}
+            )
+    return remove_repeat_entries(pairs)
+
+
+def first_coordination_distance(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        for neighbor in nn:
+            for idx in equiv_indicies:
+                if neighbor["site_index"] in idx:
+                    ind_neighbor = idx[0]
+
+            pairs.append(
+                {
+                    "atom 1": atom[0],
+                    "atom 2": neighbor["site_index"],
+                    "true_pair": [atom[0], ind_neighbor],
+                }
+            )
+    return pairs
+
+
+def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structure):
+    pairs = []
+    for atom in index:
+        nn = nn_function.get_nn_info(structure, atom[0])
+        ind_list = [i["site_index"] for i in nn]
+
+        for pair in list(combinations(ind_list, 2)):
+            for i in equiv_indicies:
+                if pair[0] in i:
+                    ind1 = (i[0], pair[0])
+                if pair[1] in i:
+                    ind2 = (i[0], pair[1])
+            unsorted = [ind1, ind2]
+            indicies = sorted(unsorted, key=lambda tup: tup[1])
+            pairs.append(
+                {
+                    "atom 1": indicies[0][0],
+                    "atom 2": indicies[1][0],
+                    "true_pair": [indicies[0][1], indicies[1][1]],
+                }
+            )
+    return pairs
+
 
 # def make_distance_data(structure):
 #     distance_data = []
 
 #     species = [i.symbol for i in structure.species]
 #     indicies, symmetry_equiv = get_unique_indicies(structure, full_list=True)
-#     indicies = [(i, species[i]) for i in indicies if species[i] == 'Si']
+#     indicies = [(i, species[i]) for i in indicies if species[i] == "Si"]
 #     nn = CrystalNN()
-    
-#     distance_data.append({
-#         'bond': 'SiSi',
-#         'pairs': second_coordination_distance(indicies, symmetry_equiv, nn, structure)
-#     })
-#     distance_data.append({
-#         'bond': 'SiO',
-#         'pairs': first_coordination_distance(indicies, symmetry_equiv, nn, structure)
-#     })
-#     distance_data.append({
-#         'bond': 'OO',
-#         'pairs': first_coordination_vertex_vertex(indicies, symmetry_equiv, nn, structure)
-#     })
+
+#     distance_data.append(
+#         {
+#             "bond": "SiSi",
+#             "pairs": second_coordination_distance(
+#                 indicies, symmetry_equiv, nn, structure
+#             ),
+#         }
+#     )
+#     distance_data.append(
+#         {
+#             "bond": "SiO",
+#             "pairs": first_coordination_distance(
+#                 indicies, symmetry_equiv, nn, structure
+#             ),
+#         }
+#     )
+#     distance_data.append(
+#         {
+#             "bond": "OO",
+#             "pairs": first_coordination_vertex_vertex(
+#                 indicies, symmetry_equiv, nn, structure
+#             ),
+#         }
+#     )
 
 #     return distance_data
 
@@ -138,8 +137,8 @@ s = CifParser(file_path).get_structures(False)[0]
 test_data = make_distance_data(s)
 
 for i in test_data:
-    print(i['bond'])
-    for j in i['pairs']:
+    print(i["bond"])
+    for j in i["pairs"]:
         print(j)
     print()
 
