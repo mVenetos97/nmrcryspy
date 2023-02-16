@@ -53,7 +53,7 @@ repos:
         language: python
         args:
           [
-            "--ignore=E402",
+            "--ignore=E402,W503,C901",
             "--exclude=.eggs, *.egg,build, src/mrsimulator/__init__.py",
             "--filename=*.pyx, *py",
             "--max-line-length=88",
