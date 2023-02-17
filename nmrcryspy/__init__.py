@@ -79,6 +79,7 @@ class Gauss_Newton_Solver:
             residuals.append(temp_res)
         Jacobian = np.vstack(jacobians)
         residual = np.hstack(residuals)
+
         return residual, Jacobian
 
     def fit(self):

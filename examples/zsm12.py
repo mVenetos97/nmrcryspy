@@ -751,7 +751,7 @@ zeolite_j = JTensor_Function(
 print(f"There are {3*len(get_unique_indicies(s))} degrees of freedom")
 
 gn = Gauss_Newton_Solver(
-    fit_function=[zeolite_dists],
+    fit_function=[zeolite_shieldings, zeolite_j, zeolite_dists],
     structure=s,
     data_dictionary=data,
     max_iter=1,
