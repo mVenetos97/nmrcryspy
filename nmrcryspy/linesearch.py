@@ -120,7 +120,7 @@ def remove_tmp(filenames):
 
 
 def update_chi2(
-    function,
+    functions,
     alpha,
     x_prime,
     sym_dict,
@@ -138,8 +138,12 @@ def update_chi2(
         atom_idx = atom["atom"]
         perturbation_opt = atom["sym_op"].apply_rotation_only(perturbations[base_idx])
         struct.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
-    J, res = function.assemble_residual_and_grad(struct, data_dictionary)
-    return np.sum(res**2)
+    chi2 = 0
+    for function in functions:
+        J, res = function.assemble_residual_and_grad(struct, data_dictionary)
+        chi2 += np.sum(res**2)
+
+    return chi2  # np.sum(res**2)
 
 
 def get_derivative(

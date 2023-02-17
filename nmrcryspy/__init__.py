@@ -118,7 +118,7 @@ class Gauss_Newton_Solver:
             # minimization_steps.append(df.iloc[0].to_dict())
 
             alpha, phi = wolfe_line_search(
-                self.fit_function[0],  # TODO: make not first element
+                self.fit_function,  # TODO: make not first element
                 phi_0,
                 perturbations,
                 sym_dict,

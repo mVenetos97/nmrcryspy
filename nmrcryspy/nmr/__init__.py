@@ -317,6 +317,7 @@ class JTensor_Function(ML_function):
                 "grad": grads,
             }
             return_data.append(d)
+
         return return_data
 
     def assemble_residual_and_grad(
@@ -337,7 +338,7 @@ class JTensor_Function(ML_function):
         )
 
         for preds in J_data:
-            residuals.append(preds["residual"].detach().numpy())
+            residuals.append(preds["residual"].item())
             dict_row = list(
                 filter(lambda atom: atom["index"] == preds["index"], data_dictionary)
             )[0]
@@ -353,4 +354,4 @@ class JTensor_Function(ML_function):
 
         # self.remove_tmp_folder()
 
-        return sub_Jacobian, residuals
+        return sub_Jacobian, np.array(residuals)
