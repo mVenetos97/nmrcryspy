@@ -198,15 +198,42 @@ class ShieldingTensor_Function(ML_function):
             )[0]
             J_row = np.zeros([3, 3 * num_atoms])
             for i, neighbors in enumerate(dict_row["neighbor_idx"]):
-                J_row[0, 3 * i] = preds["grad_11"][0][neighbors][0].item()
-                J_row[0, 3 * i + 1] = preds["grad_11"][0][neighbors][1].item()
-                J_row[0, 3 * i + 2] = preds["grad_11"][0][neighbors][2].item()
-                J_row[1, 3 * i] = preds["grad_22"][0][neighbors][0].item()
-                J_row[1, 3 * i + 1] = preds["grad_22"][0][neighbors][1].item()
-                J_row[1, 3 * i + 2] = preds["grad_22"][0][neighbors][2].item()
-                J_row[2, 3 * i] = preds["grad_33"][0][neighbors][0].item()
-                J_row[2, 3 * i + 1] = preds["grad_33"][0][neighbors][1].item()
-                J_row[2, 3 * i + 2] = preds["grad_33"][0][neighbors][2].item()
+                J_row[0, 3 * i] = (
+                    preds["grad_11"][0][neighbors][0].item()
+                    / self.sigma_errors["sigma_11"]
+                )
+                J_row[0, 3 * i + 1] = (
+                    preds["grad_11"][0][neighbors][1].item()
+                    / self.sigma_errors["sigma_11"]
+                )
+                J_row[0, 3 * i + 2] = (
+                    preds["grad_11"][0][neighbors][2].item()
+                    / self.sigma_errors["sigma_11"]
+                )
+                J_row[1, 3 * i] = (
+                    preds["grad_22"][0][neighbors][0].item()
+                    / self.sigma_errors["sigma_22"]
+                )
+                J_row[1, 3 * i + 1] = (
+                    preds["grad_22"][0][neighbors][1].item()
+                    / self.sigma_errors["sigma_22"]
+                )
+                J_row[1, 3 * i + 2] = (
+                    preds["grad_22"][0][neighbors][2].item()
+                    / self.sigma_errors["sigma_22"]
+                )
+                J_row[2, 3 * i] = (
+                    preds["grad_33"][0][neighbors][0].item()
+                    / self.sigma_errors["sigma_33"]
+                )
+                J_row[2, 3 * i + 1] = (
+                    preds["grad_33"][0][neighbors][1].item()
+                    / self.sigma_errors["sigma_33"]
+                )
+                J_row[2, 3 * i + 2] = (
+                    preds["grad_33"][0][neighbors][2].item()
+                    / self.sigma_errors["sigma_33"]
+                )
             if type(sub_Jacobian) == int:
                 sub_Jacobian = J_row
             else:
@@ -316,9 +343,9 @@ class JTensor_Function(ML_function):
             )[0]
             J_row = np.zeros(3 * num_atoms)
             for i, neighbors in enumerate(dict_row["neighbor_idx"]):
-                J_row[3 * i] = preds["grad"][0][neighbors][0].item()
-                J_row[3 * i + 1] = preds["grad"][0][neighbors][1].item()
-                J_row[3 * i + 2] = preds["grad"][0][neighbors][2].item()
+                J_row[3 * i] = preds["grad"][0][neighbors][0].item() / self.J_error
+                J_row[3 * i + 1] = preds["grad"][0][neighbors][1].item() / self.J_error
+                J_row[3 * i + 2] = preds["grad"][0][neighbors][2].item() / self.J_error
             if type(sub_Jacobian) == int:
                 sub_Jacobian = J_row
             else:
