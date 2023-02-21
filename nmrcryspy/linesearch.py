@@ -11,6 +11,9 @@ import pandas as pd
 def simple_line_search(
     function, data_dictionary, initial_struct, x_prime, sym_dict, chi=np.inf
 ):
+    """
+    crude linesearch algorithm to be deprecaterd
+    """
     prev_rev = chi
     alpha_residuals = []
     for idx, alpha in enumerate(
@@ -52,6 +55,9 @@ def line_search(
     J_name="sigma_2_J.json",
     chi=np.inf,
 ):
+    """
+    crude linesearch algorithm to be deprecaterd
+    """
 
     temp_path = filepath + "tmp"
     os.makedirs(temp_path, exist_ok=True)
@@ -129,6 +135,27 @@ def update_chi2(
     NUM_ATOMS,
     UNIQUE_IND,
 ):
+    """Updates the chi squared in response to a perturbation
+
+    Arguments
+    ---------
+
+    functions: list of callable optimizer functions.
+
+    alpha: float of the stepsize
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    data_dictionary: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    initial_structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+    """
     struct = copy.deepcopy(initial_struct)
     perturbations = np.reshape(
         x_prime * alpha, (int(len(x_prime) / 3), 3)
@@ -158,6 +185,32 @@ def get_derivative(
     UNIQUE_IND,
     epsilon=0.01,
 ):
+    """calculates numerical derivative of the chi squared with respect to the
+    stepsize.
+
+    Arguments
+    ---------
+
+    functions: list of callable optimizer functions.
+
+    phi: float of the chi squared
+
+    alpha: float of the stepsize
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    data_dictionary: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    initial_structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+    """
     phi_e = update_chi2(
         function,
         alpha + epsilon,
@@ -172,6 +225,23 @@ def get_derivative(
 
 
 def quadratic_interpolation(alpha_low, phi_low, d_phi_low, alpha_high, phi_high):
+    """Quadratic interpolation scheme to find an alpha value between alpha high
+    and alpha low
+
+    Arguments
+    ---------
+
+    alpha_low: lower bound alpha value
+
+    phi_low: chi squared term at lower alpha
+
+    d_phi_low: derivative of chi squared at lower alpha
+
+    alpha_high: upper alpha bound
+
+    phi_high: chi squared at upper alpha bound
+    """
+
     with np.errstate(divide="raise", over="raise", invalid="raise"):
         try:
             D = phi_low
@@ -195,6 +265,26 @@ def cubic_interpolation(
     alpha_test,
     phi_alpha_test,
 ):
+    """Cubic interpolation scheme to find an alpha value between alpha high and alpha low
+    with knowledge of an intermediate alpha value
+
+    Arguments
+    ---------
+
+    alpha_low: lower bound alpha value
+
+    phi_low: chi squared term at lower alpha
+
+    d_phi_low: derivative of chi squared at lower alpha
+
+    alpha_high: upper alpha bound
+
+    phi_high: chi squared at upper alpha bound
+
+    alpha_test: intermediate alpha value
+
+    phi_alpha_test: chi squared at the intermediate alpha value
+    """
     with np.errstate(divide="raise", over="raise", invalid="raise"):
         try:
             C = d_alpha_low
@@ -242,6 +332,44 @@ def zoom(
     c1=0.0001,
     c2=0.9,
 ):
+    """Zoom function of linesearch algorithm. Uses algorithm described
+    as algorithm 3.6 in Wright and Nocedal, 'Numerical Optimization',
+    1999, pp. 61
+
+    Arguments
+    ---------
+
+    function: list of callable optimizer functions.
+
+    phi_0: float of the alpha = 0 chi squared
+
+    dphi_0: float derivative of the alpha = 0 chi squared
+
+    alpha_low: float lower bound of alpha range to check
+
+    alpha_high: float upper bound of alpha range to check
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    dist_test_dict: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+
+    max_iter: integer of maximum iterations of linesearch procedure
+
+    c1: float for Armijo condition rule
+
+    c2: float for curvature condition rule
+
+    """
     max_iter = 15
     delta1 = 0.2  # cubic_interpolation check
     delta2 = 0.1  # quadratic_interpolation check
@@ -381,6 +509,39 @@ def wolfe_line_search(
     c1=0.0001,
     c2=0.9,
 ):
+    """Line search function to find the optimal step size along a
+    descent path. Uses algorithm described in Wright and Nocedal,
+    'Numerical Optimization', 1999, pp. 59-61 to enforce strong Wolfe
+    conditions.
+
+    Arguments
+    ---------
+
+    function: list of callable optimizer functions.
+
+    phi_0: float of the alpha = 0 chi squared
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    dist_test_dict: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+
+    max_iter: integer of maximum iterations of linesearch procedure
+
+    c1: float for Armijo condition rule
+
+    c2: float for curvature condition rule
+
+    """
     dphi_0 = get_derivative(
         function,
         phi_0,

@@ -146,7 +146,7 @@ class Gauss_Newton_Solver:
                 print("RMSE error smaller than tolerance. Fit terminated.")
                 return minimization_steps
             chi2_prev = phi
-            self.updata_structure(self.structure, sym_dict, perturbations, alpha)
+            self.update_structure(self.structure, sym_dict, perturbations, alpha)
             minimization_steps.append(
                 {
                     "step": k,
@@ -159,11 +159,23 @@ class Gauss_Newton_Solver:
 
         return minimization_steps
 
-    def updata_structure(self, structure, sym_dict, x_prime, alpha):
-        """description
+    def update_structure(self, structure, sym_dict, x_prime, alpha):
+        """Function to apply a translation to the atoms in the structure
+        while respecting the original spacegroup of the structure. Saves
+        the new structure as the class attribute structure.
 
         Attributes
         ----------
+
+        structure: pymatgen.Structure object containing initial structure.
+
+        sym_dict: dict object containing the symmetry operations that correspond
+            to each atom in the above structure from a set of base atoms.
+
+        x_prime: a np.ndarray vector containing the translation vectors for each of
+            the base atoms.
+
+        alpha: a float representing the step size for the translations.
         """
 
         perturbations = np.reshape(x_prime * alpha, (int(len(x_prime) / 3), 3))
@@ -177,10 +189,9 @@ class Gauss_Newton_Solver:
         self.structure = structure
 
     def make_symmetry_dictionary(self):
-        """description
-
-        Attributes
-        ----------
+        """Given the structure, finds the mapping between the atoms in the complete cell and
+        the base atoms. Returns a dictionary where each entry is an atom in the
+        structure, its symmetry operation, and the original atom it is derived from.
         """
         sga = SpacegroupAnalyzer(self.structure)
         symmeterized_struc = sga.get_symmetrized_structure()

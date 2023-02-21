@@ -16,32 +16,73 @@ from nmrcryspy.utils import get_unique_indicies
 
 
 def shielding_regr(sigma):
+    """A regression function correlating the shielding tensor
+    principle component, sigma_ii, to the chemical shift tensor
+    principal component, delta_ii
+
+    Arguments
+    ---------
+
+    sigma: float representing the shielding tensor principal
+        component.
+    """
     return (0.8292 * sigma) - 437.69
 
 
 def J_regr(J):
+    """A regression function correlating the DFT-calculated
+    J-coupling value to an experimentally observed J-coupling.
+
+    Arguments
+    ---------
+
+    J: float representing the DFT-calculated J-coupling.
+    """
     return (1.4217 * J) + 3.7953
 
 
 def randomword(length):
+    """Returns a random lowercase alphabetical string of length, length.
+
+    Arguments
+    ---------
+
+    length: a float of length of the string to return.
+    """
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(length))
 
 
 class ML_function:
+    """Base class for the machine learning functions. Contains useful
+    functions for the creation of the data files used by the ML function.
+
+    Attributes
+    ----------
+
+    root: string filepath to data used for ML model
+
+    data_file: string name of initial data file for ML model
+    """
+
     def __init__(
         self,
         root: str = None,
         data_file: str = None,
     ):
-        """
-        :param root: filepath to data used for ML model
-        :param data_file: name of initial data file for ML model
-        """
+        """ """
         self.root = root
         self.data_file = data_file
 
     def make_file_from_structure(self, structure):
+        """Takes a structure and creates the corresponding ML data file for
+        that structure
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object corresponding to the data file.
+        """
         original_file = "".join([self.root, self.data_file])
         temp = pd.DataFrame(loadfn(original_file))
         idxs = list(temp.index.values)
@@ -59,19 +100,51 @@ class ML_function:
         return tmp_filepath, new_name
 
     def remove_tmp_folder(self):
+        """
+        File to cleanup the generated scratch files.
+        """
         root = self.root
         for file_items in os.listdir(os.path.join(root, "tmp")):
             os.remove(os.path.join(root, "tmp", file_items))
         os.rmdir(os.path.join(root, "tmp"))
 
     def get_unique_atoms(self, structure):
+        """Finds the symmetrically unique atoms of a structure object.
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object to find symmetrically unique atoms.
+        """
         unique_ind = get_unique_indicies(structure)
         return len(unique_ind)
 
 
 class ShieldingTensor_Function(ML_function):
-    """
-    Function to calculate the distance and gradients between points.
+    """ShieldingTensor_Function class for the prediction and residuals
+    of the shielding tensor ML model.
+
+    Attributes
+    ----------
+
+    sigma_errors: Dictionary containing the standard
+        deviation of sigma_11, sigma_22, sigma_33 where the order
+        of the sigma_ii's follow the standard convention of
+        sigma_11 > sigma_22 > sigma_33.
+        Example: {'sigma_11': 0.4, 'sigma_22': 2.5, 'sigma_33': 0.7}
+
+    regr_func: Callable Regression function used to convert shielding
+        values to shift values
+
+    r_cut: float representing cutoff radius used to define the
+        local neighborhood in the GNN
+
+    checkpoint: string containing name of the checkpoint file containing
+        the GNN model
+
+    root: string filepath to data used for ML model
+
+    data_file: string name of initial data file for ML model
     """
 
     def __init__(
@@ -83,20 +156,6 @@ class ShieldingTensor_Function(ML_function):
         root: str = None,
         data_file: str = None,
     ):
-        """
-        :param sigma_errors: Dictionary containing the standard
-        deviation of sigma_11, sigma_22, sigma_33 where the order
-        of the sigma_ii's follow the standard convention of
-        sigma_11 > sigma_22 > sigma_33.
-        Example: {'sigma_11': 0.4, 'sigma_22': 2.5, 'sigma_33': 0.7}
-        :param regr_func: Regression function used to convert shielding
-        values to shift values
-        :param r_cut: cutoff radius used to define the local neighborhood
-        in the GNN
-        :param checkpoint: name of the checkpoint file containing the GNN model
-        :param root: filepath to data used for ML model
-        :param data_file: name of initial data file for ML model
-        """
         super().__init__(root, data_file)
         self.sigma_errors = sigma_errors
         self.regr_func = regr_func
@@ -106,6 +165,18 @@ class ShieldingTensor_Function(ML_function):
         # self.data_file = data_file
 
     def calculate_grad_and_residual(self, root, data_file):
+        """Function to calculate the gradient and residual for processing by
+        the assemble_residual_and_grad function.
+
+        Arguments
+        ---------
+
+        root: string containing the data file location for the calculation of the
+            gradient and residual.
+
+        data_file: string containg the name of the data file to be used for the
+            gradient and residual.
+        """
         converter = CartesianTensor(formula="ij=ji")
         model = AtomicTensorModel.load_from_checkpoint(
             self.checkpoint, strict=True, verbose=False
@@ -173,6 +244,18 @@ class ShieldingTensor_Function(ML_function):
         structure,
         data_dictionary,
     ):
+        """Function to package the Jacobian matrix and residual vector for the
+        Gauss_Newton_Solver class.
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object used to calculate the residual
+            and Jacobian.
+
+        data_dictionary: Dict of the data_dictionary attribute from the
+            Gauss_Newton_Solver which contains the ML data.
+        """
 
         root, data_file = self.make_file_from_structure(structure)
         num_atoms = self.get_unique_atoms(structure)
@@ -245,8 +328,26 @@ class ShieldingTensor_Function(ML_function):
 
 
 class JTensor_Function(ML_function):
-    """
-    Function to calculate the distance and gradients between points.
+    """JTensor_Function class for the prediction and residuals
+    of the J tensor ML model.
+
+    Attributes
+    ----------
+
+    J_error: The standard deviation of J coupling
+
+    regr_func: Callable Regression function used to convert shielding
+        values to shift values
+
+    r_cut: float representing cutoff radius used to define the
+        local neighborhood in the GNN
+
+    checkpoint: string containing name of the checkpoint file containing
+        the GNN model
+
+    root: string filepath to data used for ML model
+
+    data_file: string name of initial data file for ML model
     """
 
     def __init__(
@@ -258,16 +359,6 @@ class JTensor_Function(ML_function):
         root: str = None,
         data_file: str = None,
     ):
-        """
-        :param sigma_errors: The standard deviation of J coupling
-        :param regr_func: Regression function used to ab initio J coupling
-        values to experimental J coupling values
-        :param r_cut: cutoff radius used to define the local neighborhood
-        in the GNN
-        :param checkpoint: name of the checkpoint file containing the GNN model
-        :param root: filepath to data used for ML model
-        :param data_file: name of initial data file for ML model
-        """
         super().__init__(root, data_file)
         self.J_error = J_error
         self.regr_func = regr_func
@@ -277,6 +368,18 @@ class JTensor_Function(ML_function):
         # self.data_file = data_file
 
     def calculate_grad_and_residual(self, root, data_file):
+        """Function to calculate the gradient and residual for processing by
+        the assemble_residual_and_grad function.
+
+        Arguments
+        ---------
+
+        root: string containing the data file location for the calculation of the
+            gradient and residual.
+
+        data_file: string containg the name of the data file to be used for the
+            gradient and residual.
+        """
         # converter = CartesianTensor(formula="ij=ji")
         model = AtomicTensorModel.load_from_checkpoint(
             self.checkpoint, strict=True, verbose=False
@@ -325,6 +428,18 @@ class JTensor_Function(ML_function):
         structure,
         data_dictionary,
     ):
+        """Function to package the Jacobian matrix and residual vector for the
+        Gauss_Newton_Solver class.
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object used to calculate the residual
+            and Jacobian.
+
+        data_dictionary: Dict of the data_dictionary attribute from the
+            Gauss_Newton_Solver which contains the ML data.
+        """
 
         root, data_file = self.make_file_from_structure(structure)
         num_atoms = self.get_unique_atoms(structure)
