@@ -35,10 +35,26 @@ from nmrcryspy.utils import get_unique_indicies
 
 
 class Gauss_Newton_Solver:
-    """
-    Gauss-Newton solver.
-    Given response vector y, dependent variable x and fit function f,
-    Minimize sum(residual^2) where residual = f(structure) - y.
+    """The Gauss-Newton solver class.
+    Given data dictionary, the crystal structure and a list of
+    fit functions, minimize sum(residual^2) where
+    residual = f(structure) - y.
+
+    Attributes
+    ----------
+
+    fit_function: List of callable functions that need to be fitted;
+
+    structure: a pymatgen structure containing the initial structure to be optimized.
+
+    data_dictionary: a Dict object containing the observations for the fit_functions.
+
+    max_iter: An int representing maximum number of iterations for optimization.
+
+    tolerance_difference: A float. Terminate iteration if RMSE difference between
+            iterations smaller than tolerance.
+
+    tolerance: a float. Terminate iteration if RMSE is smaller than tolerance.
     """
 
     def __init__(
@@ -50,15 +66,6 @@ class Gauss_Newton_Solver:
         tolerance_difference: float = 10 ** (-10),
         tolerance: float = 10 ** (-9),
     ):
-        """
-        :param fit_function: Functions that need to be fitted;
-            y_estimate = fit_function(structure).
-        :param max_iter: Maximum number of iterations for optimization.
-        :param tolerance_difference: Terminate iteration if RMSE difference between
-            iterations smaller than tolerance.
-        :param tolerance: Terminate iteration if RMSE is smaller than tolerance.
-        :param init_guess: Initial guess for coefficients.
-        """
         self.fit_function = fit_function
         self.initial_structure = copy.deepcopy(structure)
         self.structure = structure
@@ -84,11 +91,8 @@ class Gauss_Newton_Solver:
 
     def fit(self):
         """
-        Fit coefficients by minimizing RMSE.
-        :param x: Independent variable.
-        :param y: Response vector.
-        :param init_guess: Initial guess for coefficients.
-        :return: Fitted coefficients.
+        Optimize the atom positions in structure by minimizing RMSE.
+
         """
         minimization_steps = []
 
@@ -155,15 +159,13 @@ class Gauss_Newton_Solver:
 
         return minimization_steps
 
-    def predict(self, x: np.ndarray):
-        """
-        Predict response for given x based on fitted coefficients.
-        :param x: Independent variable.
-        :return: Response vector.
-        """
-        return self.fit_function(x, self.coefficients)
-
     def updata_structure(self, structure, sym_dict, x_prime, alpha):
+        """description
+
+        Attributes
+        ----------
+        """
+
         perturbations = np.reshape(x_prime * alpha, (int(len(x_prime) / 3), 3))
         for atom in sym_dict:
             base_idx = atom["base_idx"]
@@ -175,6 +177,11 @@ class Gauss_Newton_Solver:
         self.structure = structure
 
     def make_symmetry_dictionary(self):
+        """description
+
+        Attributes
+        ----------
+        """
         sga = SpacegroupAnalyzer(self.structure)
         symmeterized_struc = sga.get_symmetrized_structure()
         sym_ops = sga.get_space_group_operations()
@@ -200,7 +207,11 @@ class Gauss_Newton_Solver:
 
     @staticmethod
     def _calculate_pseudoinverse(x: np.ndarray) -> np.ndarray:
-        """
-        Moore-Penrose inverse.
+        """Calculate the Moore-Penrose inverse of an array.
+
+        Attributes
+        ----------
+
+        x: an np.ndarray. The input matrix.
         """
         return np.linalg.pinv(x.T @ x) @ x.T

@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from pymatgen.io.cif import CifParser
+from pymatgen.io.cif import CifParser, CifWriter
 
 from nmrcryspy import Gauss_Newton_Solver
 from nmrcryspy.geometric import Distance_Function
@@ -751,11 +751,11 @@ zeolite_j = JTensor_Function(
 print(f"There are {3*len(get_unique_indicies(s))} degrees of freedom")
 
 gn = Gauss_Newton_Solver(
-    fit_function=[zeolite_shieldings, zeolite_j, zeolite_dists],
+    fit_function=[zeolite_dists],  # zeolite_shieldings, zeolite_j, zeolite_dists],
     structure=s,
     data_dictionary=data,
-    max_iter=1,
-    tolerance_difference=1e-10,
+    max_iter=20,
+    tolerance_difference=1e-8,
 )
 
 test = pd.DataFrame(gn.fit()).sort_values(by="chi", ascending=True)
@@ -763,7 +763,7 @@ dist_test_dict = data["Bond_Distances"]
 distributions = []
 
 s = test.iloc[0]["structure"]
-# CifWriter(s).write_file('/Users/mvenetos/Desktop/dls_zsm12.cif')
+CifWriter(s).write_file("/Users/mvenetos/Desktop/dls_zsm12.cif")
 
 for idx, layer in enumerate(["SiSi", "SiO", "OO"]):
     temp = []
