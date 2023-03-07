@@ -17,7 +17,7 @@ __email__ = "mvenetos@berkeley.edu"
 __license__ = "BSD License"
 __maintainer__ = "Maxwell C. Venetos"
 __status__ = "Beta"
-__version__ = "0.1"
+__version__ = "0.0.1"
 
 import copy
 import math
@@ -94,6 +94,7 @@ class Gauss_Newton_Solver:
         Optimize the atom positions in structure by minimizing RMSE.
 
         """
+        chi_2 = []
         minimization_steps = []
 
         UNIQUE_IND = get_unique_indicies(self.structure)
@@ -102,7 +103,10 @@ class Gauss_Newton_Solver:
 
         chi2_prev = np.inf
         res, J = self.get_residuals_and_jacobian(self.data_dictionary, self.structure)
-        print(f"Initial: chi2 {np.sum(res**2)/81}")
+        shape = np.shape(J)
+        dof = shape[0] - shape[1]
+        print(f"Initial: chi2 {np.sum(res**2)/dof}")
+        chi_2.append(np.sum(res**2))
 
         for k in range(self.max_iter):
 
@@ -132,8 +136,8 @@ class Gauss_Newton_Solver:
                 NUM_ATOMS,
                 UNIQUE_IND,
             )
-
-            print(f"Round {k}: chi2 {phi/(3*NUM_ATOMS)}")  # with alpha {alpha}")
+            chi_2.append(phi)
+            print(f"Round {k}: chi2 {phi/dof}")  # with alpha {alpha}")
             if self.tolerance_difference is not None:
                 diff = np.abs(chi2_prev - phi)
                 if diff < self.tolerance_difference:
@@ -141,9 +145,11 @@ class Gauss_Newton_Solver:
                         "RMSE difference between iterations smaller than tolerance."
                         " Fit terminated."
                     )
+                    print(chi_2)
                     return minimization_steps
             if phi < self.tolerance:
                 print("RMSE error smaller than tolerance. Fit terminated.")
+                print(chi_2)
                 return minimization_steps
             chi2_prev = phi
             self.updata_structure(self.structure, sym_dict, perturbations, alpha)
@@ -156,7 +162,7 @@ class Gauss_Newton_Solver:
                 }
             )
         print("Max number of iterations reached. Fit didn't converge.")
-
+        print(chi_2)
         return minimization_steps
 
     def updata_structure(self, structure, sym_dict, x_prime, alpha):

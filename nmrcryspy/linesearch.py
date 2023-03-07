@@ -1,122 +1,6 @@
 import copy
-import os
-import shutil
 
 import numpy as np
-import pandas as pd
-
-
-# simple_line_search(self.fit_function[0], self.data_dictionary,
-# self.structure, perturbations, sym_dict,)
-def simple_line_search(
-    function, data_dictionary, initial_struct, x_prime, sym_dict, chi=np.inf
-):
-    prev_rev = chi
-    alpha_residuals = []
-    for idx, alpha in enumerate(
-        [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001]
-    ):
-        # for idx, alpha in enumerate([0.001, 0.0001, 0.00001, 0.000001]):
-        struct = copy.deepcopy(initial_struct)
-        # file_path = '/Users/mvenetos/Box Sync/All Manuscripts/
-        # zeolite refinements/sigma_2_singlextal.cif'
-        # struct = CifParser(file_path).get_structures(False)[0]
-
-        perturbations = np.reshape(
-            x_prime * alpha, (int(len(x_prime) / 3), 3)
-        )  # perturbations*alpha
-        for atom in sym_dict:
-            base_idx = atom["base_idx"]
-            atom_idx = atom["atom"]
-            perturbation_opt = atom["sym_op"].apply_rotation_only(
-                perturbations[base_idx]
-            )
-            struct.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
-
-        append_counter = f"_a{idx}"
-
-        J, res = function.assemble_residual_and_grad(struct, data_dictionary)
-        alpha_residuals.append(
-            {"alpha": alpha, "chi": np.sum(res**2), "structure": struct}
-        )
-    return pd.DataFrame(alpha_residuals).sort_values(by="chi", ascending=True)
-
-
-def line_search(
-    initial_struct,
-    x_prime,
-    sym_dict,
-    filepath="/Users/mvenetos/Box Sync/All Manuscripts"
-    "/zeolite refinements/sigma_2_temp/",
-    cs_name="sigma_2_CS.json",
-    J_name="sigma_2_J.json",
-    chi=np.inf,
-):
-
-    temp_path = filepath + "tmp"
-    os.makedirs(temp_path, exist_ok=True)
-    cspath = filepath + cs_name
-    Jpath = filepath + J_name
-    shutil.copy2(cspath, temp_path)
-    shutil.copy2(Jpath, temp_path)
-    prev_rev = chi
-    alpha_residuals = []
-    for idx, alpha in enumerate(
-        [
-            1,
-            0.1,
-            0.01,
-            0.001,
-            0.0001,
-        ]
-    ):  # 0.00001, 0.000001, 0.0000001]):
-        # for idx, alpha in enumerate([0.001, 0.0001, 0.00001, 0.000001]):
-        struct = copy.deepcopy(initial_struct)
-        # file_path = '/Users/mvenetos/Box Sync/All Manuscripts/
-        # zeolite refinements/sigma_2_singlextal.cif'
-        # struct = CifParser(file_path).get_structures(False)[0]
-
-        perturbations = np.reshape(
-            x_prime * alpha, (int(len(x_prime) / 3), 3)
-        )  # perturbations*alpha
-        for atom in sym_dict:
-            base_idx = atom["base_idx"]
-            atom_idx = atom["atom"]
-            perturbation_opt = atom["sym_op"].apply_rotation_only(
-                perturbations[base_idx]
-            )
-            struct.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
-
-        append_counter = f"_a{idx}"
-
-        temp_cs = make_new_data(temp_path + "/" + cs_name, struct, append_counter)
-        testing_cs = "tmp/" + temp_cs.split("/")[-1]
-        temp_J = make_new_data(temp_path + "/" + J_name, struct, append_counter)
-        testing_J = "tmp/" + temp_J.split("/")[-1]
-        res, J = get_residuals_and_jacobian(
-            test_dict,
-            dist_test_dict,
-            s,
-            NUM_ATOMS,
-            UNIQUE_IND,
-            CS_data=testing_cs,
-            J_data=testing_J,
-        )
-        alpha_residuals.append({"CS": temp_cs, "J": temp_J, "chi": np.sum(res**2)})
-    return pd.DataFrame(alpha_residuals).sort_values(by="chi", ascending=True)
-
-
-def remove_tmp(filenames):
-    root = filenames[0].split("tmp")[0]
-    temp = []
-    for path in filenames:
-        filename = path.split("tmp/")[-1]
-        temp.append(filename)
-        shutil.move(path, os.path.join(root, filename))
-    for file_items in os.listdir(os.path.join(root, "tmp")):
-        os.remove(os.path.join(root, "tmp", file_items))
-    os.rmdir(os.path.join(root, "tmp"))
-    return temp
 
 
 def update_chi2(
@@ -397,7 +281,7 @@ def wolfe_line_search(
 
     alpha_prev = 0
     phi_alpha_prev = phi_0
-    dalpha_prev = dphi_0
+    # dalpha_prev = dphi_0
 
     alpha = 1  # np.random.uniform(0, alpha_max) #1
     phi_alpha = update_chi2(
@@ -477,7 +361,7 @@ def wolfe_line_search(
             NUM_ATOMS,
             UNIQUE_IND,
         )
-        dalpha_prev = dphi_alpha
+        # dalpha_prev = dphi_alpha
 
     print("Max iterations excedded on Wolfe line search")
     return alpha, phi_alpha
