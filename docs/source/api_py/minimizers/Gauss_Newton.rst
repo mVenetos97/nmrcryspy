@@ -1,5 +1,5 @@
 
-Gauss-Newton_Solver
+Gauss_Newton_Solver
 ===================
 
 .. currentmodule:: nmrcryspy

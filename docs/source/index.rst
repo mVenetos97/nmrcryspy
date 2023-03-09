@@ -80,5 +80,5 @@ API and references
 
    api_py/py-minimizer
    api_py/fit-functions
+   api_py/linesearch.rst
    api_py/utils
-
