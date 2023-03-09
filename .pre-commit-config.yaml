@@ -54,7 +54,7 @@ repos:
         args:
           [
             "--ignore=E402,W503,C901",
-            "--exclude=.eggs, *.egg,build, src/mrsimulator/__init__.py",
+            "--exclude=.eggs, *.egg,build, src/nmrcryspy/__init__.py",
             "--filename=*.pyx, *py",
             "--max-line-length=88",
             "--max-complexity=8",

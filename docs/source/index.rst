@@ -55,6 +55,8 @@ Introduction
     :maxdepth: 2
     :caption: Introduction
 
+    installation/installation
+
 User Guide
 ----------
 
