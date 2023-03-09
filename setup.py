@@ -29,6 +29,11 @@ setup(
         "numpy",
         "pandas",
         "pymatgen",
+        "e3nn",
+        "torch",
+        "eigenn",
+        "monty",
+        
         # "jsonargparse==3.19.2",
     ],
     extras_require={
