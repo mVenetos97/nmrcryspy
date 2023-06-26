@@ -12,7 +12,7 @@ def simple_line_search(
     function, data_dictionary, initial_struct, x_prime, sym_dict, chi=np.inf
 ):
     """
-    crude linesearch algorithm to be deprecaterd
+    crude linesearch algorithm to be removed.
     """
     prev_rev = chi
     alpha_residuals = []
@@ -56,7 +56,7 @@ def line_search(
     chi=np.inf,
 ):
     """
-    crude linesearch algorithm to be deprecaterd
+    crude linesearch algorithm to be removed
     """
 
     temp_path = filepath + "tmp"
@@ -155,6 +155,8 @@ def update_chi2(
     NUM_ATOMS: int of the number of unique atoms in the structure
 
     UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    Returns: float
     """
     struct = copy.deepcopy(initial_struct)
     perturbations = np.reshape(
@@ -210,6 +212,8 @@ def get_derivative(
     UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
 
     epsilon: float stepsize for the calculation of numerical derivatives
+
+    Returns: float
     """
     phi_e = update_chi2(
         function,
@@ -240,6 +244,8 @@ def quadratic_interpolation(alpha_low, phi_low, d_phi_low, alpha_high, phi_high)
     alpha_high: upper alpha bound
 
     phi_high: chi squared at upper alpha bound
+
+    Returns: Float
     """
 
     with np.errstate(divide="raise", over="raise", invalid="raise"):
@@ -284,6 +290,8 @@ def cubic_interpolation(
     alpha_test: intermediate alpha value
 
     phi_alpha_test: chi squared at the intermediate alpha value
+
+    Returns: float
     """
     with np.errstate(divide="raise", over="raise", invalid="raise"):
         try:
@@ -369,6 +377,7 @@ def zoom(
 
     c2: float for curvature condition rule
 
+    Returns: float, float
     """
     max_iter = 15
     delta1 = 0.2  # cubic_interpolation check
@@ -541,6 +550,7 @@ def wolfe_line_search(
 
     c2: float for curvature condition rule
 
+    Returns: float, float
     """
     dphi_0 = get_derivative(
         function,
