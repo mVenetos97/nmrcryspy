@@ -1,3 +1,5 @@
+.. _nmr_api:
+
 NMR functions
 =============
 

@@ -20,11 +20,11 @@ def shielding_regr(sigma):
     principle component, sigma_ii, to the chemical shift tensor
     principal component, delta_ii
 
-    Arguments
-    ---------
+    Args:
+        sigma: float representing the shielding tensor principal
+            component.
 
-    sigma: float representing the shielding tensor principal
-        component.
+    Returns: float
     """
     return (0.8292 * sigma) - 437.69
 
@@ -33,10 +33,10 @@ def J_regr(J):
     """A regression function correlating the DFT-calculated
     J-coupling value to an experimentally observed J-coupling.
 
-    Arguments
-    ---------
+    Args:
+        J: float representing the DFT-calculated J-coupling.
 
-    J: float representing the DFT-calculated J-coupling.
+    Returns: float
     """
     return (1.4217 * J) + 3.7953
 
@@ -44,10 +44,10 @@ def J_regr(J):
 def randomword(length):
     """Returns a random lowercase alphabetical string of length, length.
 
-    Arguments
-    ---------
+    Args:
+        length: a float of length of the string to return.
 
-    length: a float of length of the string to return.
+    Returns: string
     """
     letters = string.ascii_lowercase
     return "".join(random.choice(letters) for i in range(length))
@@ -78,10 +78,10 @@ class ML_function:
         """Takes a structure and creates the corresponding ML data file for
         that structure
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object corresponding to the data file.
 
-        structure: pymatgen.Structure object corresponding to the data file.
+        Return: string, string
         """
         original_file = "".join([self.root, self.data_file])
         temp = pd.DataFrame(loadfn(original_file))
@@ -111,10 +111,10 @@ class ML_function:
     def get_unique_atoms(self, structure):
         """Finds the symmetrically unique atoms of a structure object.
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object to find symmetrically unique atoms.
 
-        structure: pymatgen.Structure object to find symmetrically unique atoms.
+        Returns: int
         """
         unique_ind = get_unique_indicies(structure)
         return len(unique_ind)
@@ -168,14 +168,14 @@ class ShieldingTensor_Function(ML_function):
         """Function to calculate the gradient and residual for processing by
         the assemble_residual_and_grad function.
 
-        Arguments
-        ---------
+        Args:
+            root: string containing the data file location for the calculation of the
+                gradient and residual.
 
-        root: string containing the data file location for the calculation of the
-            gradient and residual.
+            data_file: string contaning the name of the data file to be used for the
+                gradient and residual.
 
-        data_file: string containg the name of the data file to be used for the
-            gradient and residual.
+        Returns: list
         """
         converter = CartesianTensor(formula="ij=ji")
         model = AtomicTensorModel.load_from_checkpoint(
@@ -247,14 +247,13 @@ class ShieldingTensor_Function(ML_function):
         """Function to package the Jacobian matrix and residual vector for the
         Gauss_Newton_Solver class.
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object used to calculate the residual
+                and Jacobian.
+            data_dictionary: Dict of the data_dictionary attribute from the
+                Gauss_Newton_Solver which contains the ML data.
 
-        structure: pymatgen.Structure object used to calculate the residual
-            and Jacobian.
-
-        data_dictionary: Dict of the data_dictionary attribute from the
-            Gauss_Newton_Solver which contains the ML data.
+        Returns: np.ndarray, np.array
         """
 
         root, data_file = self.make_file_from_structure(structure)
@@ -371,14 +370,13 @@ class JTensor_Function(ML_function):
         """Function to calculate the gradient and residual for processing by
         the assemble_residual_and_grad function.
 
-        Arguments
-        ---------
+        Args:
+            root: string containing the data file location for the calculation of the
+                gradient and residual.
+            data_file: string containg the name of the data file to be used for the
+                gradient and residual.
 
-        root: string containing the data file location for the calculation of the
-            gradient and residual.
-
-        data_file: string containg the name of the data file to be used for the
-            gradient and residual.
+        Returns: list
         """
         # converter = CartesianTensor(formula="ij=ji")
         model = AtomicTensorModel.load_from_checkpoint(
@@ -431,14 +429,13 @@ class JTensor_Function(ML_function):
         """Function to package the Jacobian matrix and residual vector for the
         Gauss_Newton_Solver class.
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object used to calculate the residual
+                and Jacobian.
+            data_dictionary: Dict of the data_dictionary attribute from the
+                Gauss_Newton_Solver which contains the ML data.
 
-        structure: pymatgen.Structure object used to calculate the residual
-            and Jacobian.
-
-        data_dictionary: Dict of the data_dictionary attribute from the
-            Gauss_Newton_Solver which contains the ML data.
+        Returns: np.ndarray, np.array
         """
 
         root, data_file = self.make_file_from_structure(structure)

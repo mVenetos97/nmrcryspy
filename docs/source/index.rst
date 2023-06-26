@@ -56,6 +56,7 @@ Introduction
     :caption: Introduction
 
     installation/installation
+    refinements/refinements
 
 User Guide
 ----------
@@ -63,6 +64,8 @@ User Guide
 .. toctree::
     :maxdepth: 3
     :caption: User Documentation
+
+    getting_started/getting_started
 
 
 Examples
