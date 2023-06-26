@@ -75,6 +75,12 @@ class Gauss_Newton_Solver:
         self.tolerance = tolerance
 
     def get_residuals_and_jacobian(self, data_dictionary, structure):
+        """
+        Calculates the residual vector and Jacobian matrix for a given structure.
+
+        Returns: np.array, np.ndarray
+        """
+
         jacobians = []
         residuals = []
 
@@ -91,8 +97,12 @@ class Gauss_Newton_Solver:
 
     def fit(self):
         """
-        Optimize the atom positions in structure by minimizing RMSE.
+        Optimize the atom positions in structure by minimizing RMSE. Returns a list of dictionaries
+        containing information for each iteration of the fit. Each entry contains: the iteration step,
+        step; the step size used, alpha; the chi^2 value, chi; and the structure at that step,
+        structure.
 
+        Returns: dict
         """
         minimization_steps = []
 
@@ -192,6 +202,8 @@ class Gauss_Newton_Solver:
         """Given the structure, finds the mapping between the atoms in the complete cell and
         the base atoms. Returns a dictionary where each entry is an atom in the
         structure, its symmetry operation, and the original atom it is derived from.
+
+        Returns: dict
         """
         sga = SpacegroupAnalyzer(self.structure)
         symmeterized_struc = sga.get_symmetrized_structure()
@@ -224,5 +236,7 @@ class Gauss_Newton_Solver:
         ----------
 
         x: an np.ndarray. The input matrix.
+
+        Returns: np.ndarray
         """
         return np.linalg.pinv(x.T @ x) @ x.T
