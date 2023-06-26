@@ -1,4 +1,4 @@
-name: nmrcryspy-docs
+name: nmrcryspy
 channels:
   - anaconda
   - conda-forge
