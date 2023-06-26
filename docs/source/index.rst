@@ -65,6 +65,8 @@ User Guide
     :maxdepth: 3
     :caption: User Documentation
 
+    getting_started/getting_started
+
 
 Examples
 --------

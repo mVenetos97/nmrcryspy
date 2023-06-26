@@ -1,3 +1,5 @@
+.. _distance_api:
+
 Geometric functions
 ===================
 
