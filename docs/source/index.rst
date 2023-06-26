@@ -56,6 +56,7 @@ Introduction
     :caption: Introduction
 
     installation/installation
+    refinements/refinements
 
 User Guide
 ----------
