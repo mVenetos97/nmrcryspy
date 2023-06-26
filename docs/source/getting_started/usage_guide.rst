@@ -1,4 +1,4 @@
-.. _optimize_function_documentation:
+.. _getting_started:
 
 ===========
 Basic Usage
@@ -8,9 +8,9 @@ Overview
 --------
 
 At the heart of the **nmrcryspy** workflow is the definition of
-a :ref:`_minimizer_api` object describing the minimization framework to be 
-used in the minimization. Each :ref:`_minimizer_api` object holds a list 
-of :ref:`_fit_function_api` objects which are used to calculate geometric 
+a :ref:`minimizer_api` object describing the minimization framework to be 
+used in the minimization. Each :ref:`minimizer_api` object holds a list 
+of :ref:`fit_function_api` objects which are used to calculate geometric 
 or NMR properties which are used during the refinement.
 
 The following examples take parts from the script in **examples/zsm12.py** 
@@ -21,11 +21,11 @@ Target Functions
 
 When performing a minimization we will need to choose the information we want 
 to optimize against (our target) and some way to predict that target. Currently, 
-we offer simple pairwise atom-atom distance based :ref:`_distance_api` targets as 
-well as machine learning based :ref:`_nmr_api:` targets. These functions provide 
+we offer simple pairwise atom-atom distance based :ref:`distance_api` targets as 
+well as machine learning based :ref:`nmr_api:` targets. These functions provide 
 methods to construct residual vectors and Jacobian matricies.
 
-Consider the example below of a :ref:`_distance_api` object for a silicon-oxygen 
+Consider the example below of a :ref:`distance_api` object for a silicon-oxygen 
 distance created in Python.
 
 .. code-block:: python
@@ -57,7 +57,7 @@ checkpoint files (.chk) for creating the machine learning (ML) functions.
 We will also need to point to a data file for the ML function and provide 
 some additional data for use in the refinement. 
 
-Consider the example below of a :ref:`_nmr_api` object for a silicon-oxygen 
+Consider the example below of a :ref:`nmr_api` object for a silicon-oxygen 
 distance created in Python.
 
 .. code-block:: python
@@ -91,11 +91,11 @@ Minimization Framework
 ----------------------
 
 Once we have the target functions identified we can now put them into a minimization 
-framework. Currently, **nmrcryspy** offers a Gauss-Newton (:ref:`_gauss_newton_api`) 
+framework. Currently, **nmrcryspy** offers a Gauss-Newton (:ref:`gauss_newton_api`) 
 optimizer. In addition to the target functions, the optimizer also takes a 
 **pymatgen.Structure** object and some hyper-parameters for the optimization itself.
 
-Consider the example below of a :ref:`_gauss_newton_api` object for a zeolite
+Consider the example below of a :ref:`gauss_newton_api` object for a zeolite
 refinement created in Python.
 
 .. code-block:: python
