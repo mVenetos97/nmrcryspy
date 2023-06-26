@@ -10,19 +10,37 @@ from nmrcryspy.utils import get_unique_indicies
 
 
 class Distance_Function:
-    """
-    Function to calculate the distance and gradients between points.
+
+    """Distance_Function class used to calculate the distance
+    and gradients between atoms in the structure.
+
+    Attributes
+    ----------
+
+    distance_measures: Dictionary containing mean bond distance and standard
+        deviation of relevant bond distance types.
+        Example: {'SiO':{'mu': 1.595, 'sigma': 0.011}}
     """
 
     def __init__(self, distance_measures: dict = None):
-        """
-        :param distance_measures: Dictionary containing mean bond distance and standard
-        deviation of relevant bond distance types.
-        Example: {'SiO':{'mu': 1.595, 'sigma': 0.011}}
-        """
         self.distance_measures = distance_measures
 
     def perturb_structure(self, initial_structure, sym_dict, x_prime, epsilon=1e-5):
+        """Applies a translation to one of the atom sites for the calculation of
+        numerical derivatives.
+
+        Arguments
+        ---------
+
+        initial_structure: pymatgen.Structure object of the original structure
+
+        sym_dict: dictionary of symmetry operation mappings to the atoms in the
+            structure
+
+        x_prime: np.ndarray for the perturbation vector.
+
+        epsilon: float of the scaling parameter for the perturbation vector.
+        """
         structure = copy.deepcopy(initial_structure)
         perturbations = np.reshape(epsilon * x_prime, (int(len(x_prime) / 3), 3))
         for atom in sym_dict:
@@ -37,13 +55,26 @@ class Distance_Function:
     def calculate_gradients(
         self, idx_1, idx_2, structure, structure_e, epsilon, bond_type, mic=True
     ):
+        """Function to calculate the gradient and residual for processing by
+        the assemble_residual_and_grad function.
+
+        Arguments
+        ---------
+
+        idx_1: integer index of atom 1
+
+        idx_2: integer index of atom 2
+
+        structure: pymatgen.Structure
+
+        structure_e: pymatgen.Structure perturbed by a translation to one of the
+            coordinates by epsilon.
+
+        epsilon: float of the stepsize used for calculating numerical derivatives.
+
+        bond_type: string denoting the type of bond
         """
-        Calculates the residual and gradients between two points in a pymatgen structure
-        :param idx_1: index of atom 1
-        :param idx_2: index of atom 2
-        :param structure: pymatgen structure
-        :param bond_type: string denoting the type of bond
-        """
+
         mu = self.distance_measures[bond_type]["mu"]
         sigma = self.distance_measures[bond_type]["sigma"]
 
@@ -62,13 +93,21 @@ class Distance_Function:
         return derivative
 
     def calculate_residual(self, idx_1, idx_2, structure, bond_type, mic=True):
+        """Function to calculate the gradient and residual for processing by
+        the assemble_residual_and_grad function.
+
+        Arguments
+        ---------
+
+        idx_1: integer index of atom 1
+
+        idx_2: integer index of atom 2
+
+        structure: pymatgen.Structure
+
+        bond_type: string denoting the type of bond
         """
-        Calculates the residual and gradients between two points in a pymatgen structure
-        :param idx_1: index of atom 1
-        :param idx_2: index of atom 2
-        :param structure: pymatgen structure
-        :param bond_type: string denoting the type of bond
-        """
+
         mu = self.distance_measures[bond_type]["mu"]
         sigma = self.distance_measures[bond_type]["sigma"]
 
@@ -82,12 +121,19 @@ class Distance_Function:
         return res
 
     def assemble_residual_and_grad(self, structure, data_dictionary):
+        """Function to package the Jacobian matrix and residual vector for the
+        Gauss_Newton_Solver class.
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object used to calculate the residual and
+             Jacobian.
+
+        data_dictionary: Dict of the data_dictionary attribute from the
+            Gauss_Newton_Solver which contains the ML data.
         """
-        Assembles a residual vector and jacobian matrix from all of the observables
-        in the data_dictionary
-        :param structure: pymatgen structure
-        :param data_dictionary: dictionary containing all of the relevant observables
-        """
+
         unique_ind = get_unique_indicies(structure)
         num_atoms = len(unique_ind)
         sym_dict = self.make_symmetry_dictionary(structure)
@@ -148,6 +194,16 @@ class Distance_Function:
         return Jacobian, residuals
 
     def make_symmetry_dictionary(self, structure):
+        """Given the structure, finds the mapping between the atoms in the complete cell
+        and the base atoms. Returns a dictionary where each entry is an atom in the
+        structure, its symmetry operation, and the original atom it is derived from.
+
+        Arguments
+        ---------
+
+        structure: pymatgen.Structure object to derive symmetry dictionary from.
+        """
+
         sga = SpacegroupAnalyzer(structure)
         symmeterized_struc = sga.get_symmetrized_structure()
         sym_ops = sga.get_space_group_operations()

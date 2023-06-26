@@ -17,7 +17,7 @@ __email__ = "mvenetos@berkeley.edu"
 __license__ = "BSD License"
 __maintainer__ = "Maxwell C. Venetos"
 __status__ = "Beta"
-__version__ = "0.0.1"
+__version__ = "0.1"
 
 import copy
 import math
@@ -75,6 +75,12 @@ class Gauss_Newton_Solver:
         self.tolerance = tolerance
 
     def get_residuals_and_jacobian(self, data_dictionary, structure):
+        """
+        Calculates the residual vector and Jacobian matrix for a given structure.
+
+        Returns: np.array, np.ndarray
+        """
+
         jacobians = []
         residuals = []
 
@@ -91,10 +97,13 @@ class Gauss_Newton_Solver:
 
     def fit(self):
         """
-        Optimize the atom positions in structure by minimizing RMSE.
+        Optimize the atom positions in structure by minimizing RMSE. Returns a list of dictionaries
+        containing information for each iteration of the fit. Each entry contains: the iteration step,
+        step; the step size used, alpha; the chi^2 value, chi; and the structure at that step,
+        structure.
 
+        Returns: dict
         """
-        chi_2 = []
         minimization_steps = []
 
         UNIQUE_IND = get_unique_indicies(self.structure)
@@ -103,10 +112,7 @@ class Gauss_Newton_Solver:
 
         chi2_prev = np.inf
         res, J = self.get_residuals_and_jacobian(self.data_dictionary, self.structure)
-        shape = np.shape(J)
-        dof = shape[0] - shape[1]
-        print(f"Initial: chi2 {np.sum(res**2)/dof}")
-        chi_2.append(np.sum(res**2))
+        print(f"Initial: chi2 {np.sum(res**2)/81}")
 
         for k in range(self.max_iter):
 
@@ -136,8 +142,8 @@ class Gauss_Newton_Solver:
                 NUM_ATOMS,
                 UNIQUE_IND,
             )
-            chi_2.append(phi)
-            print(f"Round {k}: chi2 {phi/dof}")  # with alpha {alpha}")
+
+            print(f"Round {k}: chi2 {phi/(3*NUM_ATOMS)}")  # with alpha {alpha}")
             if self.tolerance_difference is not None:
                 diff = np.abs(chi2_prev - phi)
                 if diff < self.tolerance_difference:
@@ -145,14 +151,12 @@ class Gauss_Newton_Solver:
                         "RMSE difference between iterations smaller than tolerance."
                         " Fit terminated."
                     )
-                    print(chi_2)
                     return minimization_steps
             if phi < self.tolerance:
                 print("RMSE error smaller than tolerance. Fit terminated.")
-                print(chi_2)
                 return minimization_steps
             chi2_prev = phi
-            self.updata_structure(self.structure, sym_dict, perturbations, alpha)
+            self.update_structure(self.structure, sym_dict, perturbations, alpha)
             minimization_steps.append(
                 {
                     "step": k,
@@ -162,14 +166,26 @@ class Gauss_Newton_Solver:
                 }
             )
         print("Max number of iterations reached. Fit didn't converge.")
-        print(chi_2)
+
         return minimization_steps
 
-    def updata_structure(self, structure, sym_dict, x_prime, alpha):
-        """description
+    def update_structure(self, structure, sym_dict, x_prime, alpha):
+        """Function to apply a translation to the atoms in the structure
+        while respecting the original spacegroup of the structure. Saves
+        the new structure as the class attribute structure.
 
         Attributes
         ----------
+
+        structure: pymatgen.Structure object containing initial structure.
+
+        sym_dict: dict object containing the symmetry operations that correspond
+            to each atom in the above structure from a set of base atoms.
+
+        x_prime: a np.ndarray vector containing the translation vectors for each of
+            the base atoms.
+
+        alpha: a float representing the step size for the translations.
         """
 
         perturbations = np.reshape(x_prime * alpha, (int(len(x_prime) / 3), 3))
@@ -183,10 +199,11 @@ class Gauss_Newton_Solver:
         self.structure = structure
 
     def make_symmetry_dictionary(self):
-        """description
+        """Given the structure, finds the mapping between the atoms in the complete cell and
+        the base atoms. Returns a dictionary where each entry is an atom in the
+        structure, its symmetry operation, and the original atom it is derived from.
 
-        Attributes
-        ----------
+        Returns: dict
         """
         sga = SpacegroupAnalyzer(self.structure)
         symmeterized_struc = sga.get_symmetrized_structure()
@@ -219,5 +236,7 @@ class Gauss_Newton_Solver:
         ----------
 
         x: an np.ndarray. The input matrix.
+
+        Returns: np.ndarray
         """
         return np.linalg.pinv(x.T @ x) @ x.T

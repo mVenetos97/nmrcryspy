@@ -1,6 +1,128 @@
 import copy
+import os
+import shutil
 
 import numpy as np
+import pandas as pd
+
+
+# simple_line_search(self.fit_function[0], self.data_dictionary,
+# self.structure, perturbations, sym_dict,)
+def simple_line_search(
+    function, data_dictionary, initial_struct, x_prime, sym_dict, chi=np.inf
+):
+    """
+    crude linesearch algorithm to be removed.
+    """
+    prev_rev = chi
+    alpha_residuals = []
+    for idx, alpha in enumerate(
+        [1, 0.1, 0.01, 0.001, 0.0001, 0.00001, 0.000001, 0.0000001]
+    ):
+        # for idx, alpha in enumerate([0.001, 0.0001, 0.00001, 0.000001]):
+        struct = copy.deepcopy(initial_struct)
+        # file_path = '/Users/mvenetos/Box Sync/All Manuscripts/
+        # zeolite refinements/sigma_2_singlextal.cif'
+        # struct = CifParser(file_path).get_structures(False)[0]
+
+        perturbations = np.reshape(
+            x_prime * alpha, (int(len(x_prime) / 3), 3)
+        )  # perturbations*alpha
+        for atom in sym_dict:
+            base_idx = atom["base_idx"]
+            atom_idx = atom["atom"]
+            perturbation_opt = atom["sym_op"].apply_rotation_only(
+                perturbations[base_idx]
+            )
+            struct.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
+
+        append_counter = f"_a{idx}"
+
+        J, res = function.assemble_residual_and_grad(struct, data_dictionary)
+        alpha_residuals.append(
+            {"alpha": alpha, "chi": np.sum(res**2), "structure": struct}
+        )
+    return pd.DataFrame(alpha_residuals).sort_values(by="chi", ascending=True)
+
+
+def line_search(
+    initial_struct,
+    x_prime,
+    sym_dict,
+    filepath="/Users/mvenetos/Box Sync/All Manuscripts"
+    "/zeolite refinements/sigma_2_temp/",
+    cs_name="sigma_2_CS.json",
+    J_name="sigma_2_J.json",
+    chi=np.inf,
+):
+    """
+    crude linesearch algorithm to be removed
+    """
+
+    temp_path = filepath + "tmp"
+    os.makedirs(temp_path, exist_ok=True)
+    cspath = filepath + cs_name
+    Jpath = filepath + J_name
+    shutil.copy2(cspath, temp_path)
+    shutil.copy2(Jpath, temp_path)
+    prev_rev = chi
+    alpha_residuals = []
+    for idx, alpha in enumerate(
+        [
+            1,
+            0.1,
+            0.01,
+            0.001,
+            0.0001,
+        ]
+    ):  # 0.00001, 0.000001, 0.0000001]):
+        # for idx, alpha in enumerate([0.001, 0.0001, 0.00001, 0.000001]):
+        struct = copy.deepcopy(initial_struct)
+        # file_path = '/Users/mvenetos/Box Sync/All Manuscripts/
+        # zeolite refinements/sigma_2_singlextal.cif'
+        # struct = CifParser(file_path).get_structures(False)[0]
+
+        perturbations = np.reshape(
+            x_prime * alpha, (int(len(x_prime) / 3), 3)
+        )  # perturbations*alpha
+        for atom in sym_dict:
+            base_idx = atom["base_idx"]
+            atom_idx = atom["atom"]
+            perturbation_opt = atom["sym_op"].apply_rotation_only(
+                perturbations[base_idx]
+            )
+            struct.translate_sites(atom_idx, -perturbation_opt, frac_coords=False)
+
+        append_counter = f"_a{idx}"
+
+        temp_cs = make_new_data(temp_path + "/" + cs_name, struct, append_counter)
+        testing_cs = "tmp/" + temp_cs.split("/")[-1]
+        temp_J = make_new_data(temp_path + "/" + J_name, struct, append_counter)
+        testing_J = "tmp/" + temp_J.split("/")[-1]
+        res, J = get_residuals_and_jacobian(
+            test_dict,
+            dist_test_dict,
+            s,
+            NUM_ATOMS,
+            UNIQUE_IND,
+            CS_data=testing_cs,
+            J_data=testing_J,
+        )
+        alpha_residuals.append({"CS": temp_cs, "J": temp_J, "chi": np.sum(res**2)})
+    return pd.DataFrame(alpha_residuals).sort_values(by="chi", ascending=True)
+
+
+def remove_tmp(filenames):
+    root = filenames[0].split("tmp")[0]
+    temp = []
+    for path in filenames:
+        filename = path.split("tmp/")[-1]
+        temp.append(filename)
+        shutil.move(path, os.path.join(root, filename))
+    for file_items in os.listdir(os.path.join(root, "tmp")):
+        os.remove(os.path.join(root, "tmp", file_items))
+    os.rmdir(os.path.join(root, "tmp"))
+    return temp
 
 
 def update_chi2(
@@ -13,6 +135,29 @@ def update_chi2(
     NUM_ATOMS,
     UNIQUE_IND,
 ):
+    """Updates the chi squared in response to a perturbation
+
+    Arguments
+    ---------
+
+    functions: list of callable optimizer functions.
+
+    alpha: float of the stepsize
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    data_dictionary: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    initial_structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    Returns: float
+    """
     struct = copy.deepcopy(initial_struct)
     perturbations = np.reshape(
         x_prime * alpha, (int(len(x_prime) / 3), 3)
@@ -42,6 +187,34 @@ def get_derivative(
     UNIQUE_IND,
     epsilon=0.01,
 ):
+    """calculates numerical derivative of the chi squared with respect to the
+    stepsize.
+
+    Arguments
+    ---------
+
+    functions: list of callable optimizer functions.
+
+    phi: float of the chi squared
+
+    alpha: float of the stepsize
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    data_dictionary: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    initial_structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+
+    Returns: float
+    """
     phi_e = update_chi2(
         function,
         alpha + epsilon,
@@ -56,6 +229,25 @@ def get_derivative(
 
 
 def quadratic_interpolation(alpha_low, phi_low, d_phi_low, alpha_high, phi_high):
+    """Quadratic interpolation scheme to find an alpha value between alpha high
+    and alpha low
+
+    Arguments
+    ---------
+
+    alpha_low: lower bound alpha value
+
+    phi_low: chi squared term at lower alpha
+
+    d_phi_low: derivative of chi squared at lower alpha
+
+    alpha_high: upper alpha bound
+
+    phi_high: chi squared at upper alpha bound
+
+    Returns: Float
+    """
+
     with np.errstate(divide="raise", over="raise", invalid="raise"):
         try:
             D = phi_low
@@ -79,6 +271,28 @@ def cubic_interpolation(
     alpha_test,
     phi_alpha_test,
 ):
+    """Cubic interpolation scheme to find an alpha value between alpha high and alpha low
+    with knowledge of an intermediate alpha value
+
+    Arguments
+    ---------
+
+    alpha_low: lower bound alpha value
+
+    phi_low: chi squared term at lower alpha
+
+    d_phi_low: derivative of chi squared at lower alpha
+
+    alpha_high: upper alpha bound
+
+    phi_high: chi squared at upper alpha bound
+
+    alpha_test: intermediate alpha value
+
+    phi_alpha_test: chi squared at the intermediate alpha value
+
+    Returns: float
+    """
     with np.errstate(divide="raise", over="raise", invalid="raise"):
         try:
             C = d_alpha_low
@@ -126,6 +340,45 @@ def zoom(
     c1=0.0001,
     c2=0.9,
 ):
+    """Zoom function of linesearch algorithm. Uses algorithm described
+    as algorithm 3.6 in Wright and Nocedal, 'Numerical Optimization',
+    1999, pp. 61
+
+    Arguments
+    ---------
+
+    function: list of callable optimizer functions.
+
+    phi_0: float of the alpha = 0 chi squared
+
+    dphi_0: float derivative of the alpha = 0 chi squared
+
+    alpha_low: float lower bound of alpha range to check
+
+    alpha_high: float upper bound of alpha range to check
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    dist_test_dict: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+
+    max_iter: integer of maximum iterations of linesearch procedure
+
+    c1: float for Armijo condition rule
+
+    c2: float for curvature condition rule
+
+    Returns: float, float
+    """
     max_iter = 15
     delta1 = 0.2  # cubic_interpolation check
     delta2 = 0.1  # quadratic_interpolation check
@@ -265,6 +518,40 @@ def wolfe_line_search(
     c1=0.0001,
     c2=0.9,
 ):
+    """Line search function to find the optimal step size along a
+    descent path. Uses algorithm described in Wright and Nocedal,
+    'Numerical Optimization', 1999, pp. 59-61 to enforce strong Wolfe
+    conditions.
+
+    Arguments
+    ---------
+
+    function: list of callable optimizer functions.
+
+    phi_0: float of the alpha = 0 chi squared
+
+    x_prime: np.ndarray for perturbation vector directions.
+
+    sym_dict: symmetry dictionary mappings for the structure.
+
+    dist_test_dict: Dict of the data_dictionary attribute from the Gauss_Newton_Solver
+
+    structure: unmodified pymatgen.Structure object
+
+    NUM_ATOMS: int of the number of unique atoms in the structure
+
+    UNIQUE_IND: np.ndarray of the indicies of each group of unique atoms.
+
+    epsilon: float stepsize for the calculation of numerical derivatives
+
+    max_iter: integer of maximum iterations of linesearch procedure
+
+    c1: float for Armijo condition rule
+
+    c2: float for curvature condition rule
+
+    Returns: float, float
+    """
     dphi_0 = get_derivative(
         function,
         phi_0,
@@ -281,7 +568,7 @@ def wolfe_line_search(
 
     alpha_prev = 0
     phi_alpha_prev = phi_0
-    # dalpha_prev = dphi_0
+    dalpha_prev = dphi_0
 
     alpha = 1  # np.random.uniform(0, alpha_max) #1
     phi_alpha = update_chi2(
@@ -361,7 +648,7 @@ def wolfe_line_search(
             NUM_ATOMS,
             UNIQUE_IND,
         )
-        # dalpha_prev = dphi_alpha
+        dalpha_prev = dphi_alpha
 
     print("Max iterations excedded on Wolfe line search")
     return alpha, phi_alpha

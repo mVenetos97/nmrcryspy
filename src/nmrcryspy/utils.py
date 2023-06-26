@@ -7,6 +7,19 @@ from pymatgen.util.coord import pbc_shortest_vectors
 
 
 def coords_with_pbc(idx_1, idx_2, stucture, mic=True):
+    """returns the cartesian coordinates between two sites in a structure
+    while applying periodic boundary conditions.
+
+    Arguments
+    ---------
+
+    idx_1: integer index for position 1
+
+    idx_2: integer index for position 2
+
+    structure: pymatgen.Structure object
+
+    """
     if mic:
         lattice = stucture.lattice
         frac_coords1 = stucture[idx_1].frac_coords
@@ -30,13 +43,33 @@ def coords_with_pbc(idx_1, idx_2, stucture, mic=True):
 
 
 def dist_from_coords(coord1, coord2):
+    """Helper function to calculate the distance between two sets
+    of Caretsian coordinates
 
+    Arguments
+    ---------
+
+    coord1: np.ndarray coordinates of site 1
+
+    coord2: np.ndarray coordinates of site 2
+
+    """
     squared_dist = np.sum((coord1 - coord2) ** 2, axis=0)
     return np.sqrt(squared_dist)
 
 
 def get_unique_indicies(structure, full_list=False):
+    """Returns a list of the symmetrically equivalent atoms in a structure.
 
+    Arguments
+    ---------
+
+    structure: pymatgen.Structure object
+
+    full_list: boolena flag for wheter or not to return the full list of lists if True
+        or just the first member of each list if False.
+
+    """
     sga = SpacegroupAnalyzer(structure)
     symmeterized_struc = sga.get_symmetrized_structure()
     full_ind_list = symmeterized_struc.equivalent_indices
@@ -48,6 +81,15 @@ def get_unique_indicies(structure, full_list=False):
 
 
 def remove_repeat_entries(data_list):
+    """Helper function to remove repeated bonding pairs in the bonding data
+    generation function
+
+    Arguments
+    ---------
+
+    data_list: list of data to parse over and remove repeated entries.
+
+    """
     temp = []
     already_exists = []
     print("data list", data_list)
@@ -118,6 +160,21 @@ def remove_repeat_entries(data_list):
 
 
 def second_coordination_distance(index, equiv_indicies, nn_function, structure):
+    """Function to find atom pairs between a central atom and atoms in the
+    second coordination sphere
+
+    Arguments
+    ---------
+
+    index: integer index of central atom
+
+    equiv_indicies: list of symmetrically equivalent atom indicies
+
+    nn_function: pymatgen.analysis.local_env function
+
+    structure: pymatgen.Structure object
+
+    """
     pairs = []
     for atom in index:
         nn = nn_function.get_nn_info(structure, atom[0])
@@ -164,6 +221,21 @@ def second_coordination_distance(index, equiv_indicies, nn_function, structure):
 
 
 def first_coordination_distance(index, equiv_indicies, nn_function, structure):
+    """Function to find atom pairs between a central atom and atoms in the
+    first coordination sphere
+
+    Arguments
+    ---------
+
+    index: integer index of central atom
+
+    equiv_indicies: list of symmetrically equivalent atom indicies
+
+    nn_function: pymatgen.analysis.local_env function
+
+    structure: pymatgen.Structure object
+
+    """
     pairs = []
     for atom in index:
         nn = nn_function.get_nn_info(structure, atom[0])
@@ -184,6 +256,20 @@ def first_coordination_distance(index, equiv_indicies, nn_function, structure):
 
 
 def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structure):
+    """Function to find of all the atoms in the first coordination sphere of a central atom
+
+    Arguments
+    ---------
+
+    index: integer index of central atom
+
+    equiv_indicies: list of symmetrically equivalent atom indicies
+
+    nn_function: pymatgen.analysis.local_env function
+
+    structure: pymatgen.Structure object
+
+    """
     pairs = []
     for atom in index:
         nn = nn_function.get_nn_info(structure, atom[0])
@@ -209,6 +295,14 @@ def first_coordination_vertex_vertex(index, equiv_indicies, nn_function, structu
 
 
 def make_distance_data(structure):
+    """Helper function to generate the distance data dictionary
+
+    Arguments
+    ---------
+
+    structure: pymatgen.Structure object
+
+    """
     distance_data = []
 
     species = [i.symbol for i in structure.species]
