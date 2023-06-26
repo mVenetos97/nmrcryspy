@@ -78,6 +78,12 @@ class Gauss_Newton_Solver:
         """
         Calculates the residual vector and Jacobian matrix for a given structure.
 
+        Args:
+            data_dictionary: dictionary containing the type of calculation to 
+                perform on an index relevant indicies of neighboring atoms.
+            structure: pymatgen.Structure object to calculate residuals and Jacobian 
+                on.
+
         Returns: np.array, np.ndarray
         """
 
@@ -99,8 +105,8 @@ class Gauss_Newton_Solver:
         """
         Optimize the atom positions in structure by minimizing RMSE. Returns a list of
         dictionaries containing information for each iteration of the fit. Each entry
-        contains: the iteration step, step; the step size used, alpha; the chi^2 value,
-         chi; and the structure at that step, structure.
+        contains: the iteration step, step; the step size used, alpha; the chi^2 
+        value, chi; and the structure at that step, structure.
 
         Returns: dict
         """
