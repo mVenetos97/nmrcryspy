@@ -29,17 +29,14 @@ class Distance_Function:
         """Applies a translation to one of the atom sites for the calculation of
         numerical derivatives.
 
-        Arguments
-        ---------
+        Args:
+            initial_structure: pymatgen.Structure object of the original structure
+            sym_dict: dictionary of symmetry operation mappings to the atoms in the
+                structure
+            x_prime: np.ndarray for the perturbation vector.
+            epsilon: float of the scaling parameter for the perturbation vector.
 
-        initial_structure: pymatgen.Structure object of the original structure
-
-        sym_dict: dictionary of symmetry operation mappings to the atoms in the
-            structure
-
-        x_prime: np.ndarray for the perturbation vector.
-
-        epsilon: float of the scaling parameter for the perturbation vector.
+        Returns: pymatgen.Structure
         """
         structure = copy.deepcopy(initial_structure)
         perturbations = np.reshape(epsilon * x_prime, (int(len(x_prime) / 3), 3))
@@ -58,21 +55,16 @@ class Distance_Function:
         """Function to calculate the gradient and residual for processing by
         the assemble_residual_and_grad function.
 
-        Arguments
-        ---------
+        Args:
+            idx_1: integer index of atom 1
+            idx_2: integer index of atom 2
+            structure: pymatgen.Structure
+            structure_e: pymatgen.Structure perturbed by a translation to one of the
+                coordinates by epsilon.
+            epsilon: float of the stepsize used for calculating numerical derivatives.
+            bond_type: string denoting the type of bond
 
-        idx_1: integer index of atom 1
-
-        idx_2: integer index of atom 2
-
-        structure: pymatgen.Structure
-
-        structure_e: pymatgen.Structure perturbed by a translation to one of the
-            coordinates by epsilon.
-
-        epsilon: float of the stepsize used for calculating numerical derivatives.
-
-        bond_type: string denoting the type of bond
+        Returns: np.array
         """
 
         mu = self.distance_measures[bond_type]["mu"]
@@ -96,16 +88,13 @@ class Distance_Function:
         """Function to calculate the gradient and residual for processing by
         the assemble_residual_and_grad function.
 
-        Arguments
-        ---------
+        Args:
+            idx_1: integer index of atom 1
+            idx_2: integer index of atom 2
+            structure: pymatgen.Structure
+            bond_type: string denoting the type of bond
 
-        idx_1: integer index of atom 1
-
-        idx_2: integer index of atom 2
-
-        structure: pymatgen.Structure
-
-        bond_type: string denoting the type of bond
+        Returns: np.array
         """
 
         mu = self.distance_measures[bond_type]["mu"]
@@ -124,14 +113,13 @@ class Distance_Function:
         """Function to package the Jacobian matrix and residual vector for the
         Gauss_Newton_Solver class.
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object used to calculate the residual and
+                Jacobian.
+            data_dictionary: Dict of the data_dictionary attribute from the
+                Gauss_Newton_Solver which contains the ML data.
 
-        structure: pymatgen.Structure object used to calculate the residual and
-             Jacobian.
-
-        data_dictionary: Dict of the data_dictionary attribute from the
-            Gauss_Newton_Solver which contains the ML data.
+        Returns: np.ndarray, np.array
         """
 
         unique_ind = get_unique_indicies(structure)
@@ -198,10 +186,10 @@ class Distance_Function:
         and the base atoms. Returns a dictionary where each entry is an atom in the
         structure, its symmetry operation, and the original atom it is derived from.
 
-        Arguments
-        ---------
+        Args:
+            structure: pymatgen.Structure object to derive symmetry dictionary from.
 
-        structure: pymatgen.Structure object to derive symmetry dictionary from.
+        Returns: list
         """
 
         sga = SpacegroupAnalyzer(structure)

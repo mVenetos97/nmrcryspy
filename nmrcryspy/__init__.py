@@ -97,10 +97,10 @@ class Gauss_Newton_Solver:
 
     def fit(self):
         """
-        Optimize the atom positions in structure by minimizing RMSE. Returns a list of dictionaries
-        containing information for each iteration of the fit. Each entry contains: the iteration step,
-        step; the step size used, alpha; the chi^2 value, chi; and the structure at that step,
-        structure.
+        Optimize the atom positions in structure by minimizing RMSE. Returns a list of
+        dictionaries containing information for each iteration of the fit. Each entry
+        contains: the iteration step, step; the step size used, alpha; the chi^2 value,
+         chi; and the structure at that step, structure.
 
         Returns: dict
         """
@@ -174,18 +174,13 @@ class Gauss_Newton_Solver:
         while respecting the original spacegroup of the structure. Saves
         the new structure as the class attribute structure.
 
-        Attributes
-        ----------
-
-        structure: pymatgen.Structure object containing initial structure.
-
-        sym_dict: dict object containing the symmetry operations that correspond
-            to each atom in the above structure from a set of base atoms.
-
-        x_prime: a np.ndarray vector containing the translation vectors for each of
-            the base atoms.
-
-        alpha: a float representing the step size for the translations.
+        Args:
+            structure: pymatgen.Structure object containing initial structure.
+            sym_dict: dict object containing the symmetry operations that correspond
+                to each atom in the above structure from a set of base atoms.
+            x_prime: a np.ndarray vector containing the translation vectors for each of
+                the base atoms.
+            alpha: a float representing the step size for the translations.
         """
 
         perturbations = np.reshape(x_prime * alpha, (int(len(x_prime) / 3), 3))
@@ -232,10 +227,8 @@ class Gauss_Newton_Solver:
     def _calculate_pseudoinverse(x: np.ndarray) -> np.ndarray:
         """Calculate the Moore-Penrose inverse of an array.
 
-        Attributes
-        ----------
-
-        x: an np.ndarray. The input matrix.
+        Args:
+            x: an np.ndarray. The input matrix.
 
         Returns: np.ndarray
         """
