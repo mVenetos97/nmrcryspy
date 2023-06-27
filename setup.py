@@ -28,11 +28,11 @@ setup(
     install_requires=[
         "numpy",
         "pandas",
-        "pymatgen",
+        #"pymatgen",
         #"e3nn",
         #"torch",
         #"eigenn",
-        "monty",
+        #"monty",
         
         # "jsonargparse==3.19.2",
     ],
