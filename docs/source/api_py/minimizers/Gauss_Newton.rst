@@ -1,7 +1,7 @@
 .. _gauss_newton_api:
 
 Gauss_Newton_Solver
-===================
+-------------------
 
 .. currentmodule:: nmrcryspy
 

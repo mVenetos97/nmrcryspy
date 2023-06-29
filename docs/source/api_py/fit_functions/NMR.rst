@@ -1,7 +1,7 @@
 .. _nmr_api:
 
 NMR functions
-=============
+-------------
 
 .. currentmodule:: nmrcryspy.nmr
 

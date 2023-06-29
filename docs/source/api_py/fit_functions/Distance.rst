@@ -1,7 +1,7 @@
 .. _distance_api:
 
 Geometric functions
-===================
+-------------------
 
 .. currentmodule:: nmrcryspy.geometric
 
