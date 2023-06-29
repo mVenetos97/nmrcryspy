@@ -1,4 +1,3 @@
-.. _minimizer_api:
 
 =============
 Minimizer API

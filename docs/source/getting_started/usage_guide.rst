@@ -8,10 +8,10 @@ Overview
 --------
 
 At the heart of the **nmrcryspy** workflow is the definition of
-a :ref:`minimizer_api` object describing the minimization framework to be 
-used in the minimization. Each :ref:`minimizer_api` object holds a list 
-of :ref:`fit_function_api` objects which are used to calculate geometric 
-or NMR properties which are used during the refinement.
+a :ref:`gauss_newton_api` object describing the minimization framework to be 
+used in the minimization. Each :ref:`gauss_newton_api` object holds a list 
+of :ref:`distance_api` and :ref:`nmr_api` objects which are used to calculate 
+geometric or NMR properties which are used during the refinement.
 
 The following examples take parts from the script in **examples/zsm12.py** 
 to describe the components that make up this library.

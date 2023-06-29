@@ -1,4 +1,3 @@
-.. _fit_function_api:
 
 ====================
 Fitting Function API

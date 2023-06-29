@@ -1,6 +1,5 @@
 
-.. _linesearch_api:
-
+=====================
 Line Search functions
 =====================
 
