@@ -24,7 +24,7 @@ author = 'Maxwell Venetos'
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'
 
-autodoc_mock_imports = ['numpy', 'eigenn', 'e3nn', 'torch']
+autodoc_mock_imports = ['numpy', 'eigenn', 'e3nn', 'torch', 'pymatgen']
 
 # -- General configuration ---------------------------------------------------
 
