@@ -23,7 +23,8 @@ from nmrcryspy.utils import dist_from_coords
 
 file_path = (
     "/Users/mvenetos/Box Sync/All Manuscripts/"
-    "zeolite refinements/ZSM-12_calcined.cif"
+    "zeolite refinements/ZSM-12_nmr_refined.cif"
+    # "zeolite refinements/ZSM-12_calcined.cif"
 )
 checkpoint_file_path = (
     "/Users/mvenetos/Documents/" "Jupyter Testing Grounds/eigenn_testing"
@@ -719,18 +720,20 @@ data = {
             ],
         },
     ],
-}
+} 
 
-# distance_dict = {
-#       'SiO': {'mu' : 1.595, 'sigma' : 0.011},
-#     'OO': {'mu' : 2.604, 'sigma' : 0.025},
-#     'SiSi': { 'mu' : 3.101, 'sigma' : 0.041}
-# }
+#updated distributions
 distance_dict = {
-    "SiO": {"mu": 1.6, "sigma": 0.01},
-    "OO": {"mu": 2.61, "sigma": 0.02},
-    "SiSi": {"mu": 3.1, "sigma": 0.05},
+      'SiO': {'mu' : 1.595, 'sigma' : 0.011},
+    'OO': {'mu' : 2.604, 'sigma' : 0.025},
+    'SiSi': { 'mu' : 3.101, 'sigma' : 0.041}
 }
+#brouwers original distributions
+# distance_dict = {
+#     "SiO": {"mu": 1.6, "sigma": 0.01},
+#     "OO": {"mu": 2.61, "sigma": 0.02},
+#     "SiSi": {"mu": 3.1, "sigma": 0.05},
+# }
 zeolite_dists = Distance_Function(distance_dict)
 
 shielding_dict = {"sigma_11": 0.4, "sigma_22": 2.5, "sigma_33": 0.7}
@@ -751,7 +754,7 @@ zeolite_j = JTensor_Function(
 print(f"There are {3*len(get_unique_indicies(s))} degrees of freedom")
 
 gn = Gauss_Newton_Solver(
-    fit_function=[zeolite_dists],  # zeolite_shieldings, zeolite_j, zeolite_dists],
+    fit_function=[zeolite_shieldings, zeolite_j, zeolite_dists],
     structure=s,
     data_dictionary=data,
     max_iter=20,
@@ -759,65 +762,64 @@ gn = Gauss_Newton_Solver(
 )
 
 test = pd.DataFrame(gn.fit()).sort_values(by="chi", ascending=True)
-dist_test_dict = data["Bond_Distances"]
-distributions = []
 
 s = test.iloc[0]["structure"]
-CifWriter(s).write_file("/Users/mvenetos/Desktop/dls_zsm12.cif")
-
-for idx, layer in enumerate(["SiSi", "SiO", "OO"]):
-    temp = []
-    print(layer)
-    for i in dist_test_dict[idx]["pairs"]:
-        if "min_image_construction" in i.keys():
-            coord1 = s[i["true_pair"][0]].coords
-            coord2 = s[i["true_pair"][1]].coords
-            temp.append(dist_from_coords(coord1, coord2))
-        else:
-            temp.append(s.get_distance(i["true_pair"][0], i["true_pair"][1]))
-        # if layer == 'OO':
-        # n1 = i['atom 1']
-        # n2 = i['atom 2']
-        # print(temp)
-    # print()
-    distributions.append({"bond": layer, "data": temp})
-df = pd.DataFrame(distributions)
-
-
-# print(f'Sisi is len{len(test_sisi)}')
-# print(f'OO is len{len(test_oo)}')
-fig, ax = plt.subplots(1, 3, figsize=(12, 3.5))
-ax[2].hist(
-    df.iloc[0]["data"], np.array(range(147, 163)) / 50, edgecolor="black", alpha=0.5
-)
-ax[2].set_title("SiSi")
-ax[2].set_xlim([2.94, 3.26])
-ax[2].set_ylim([0, 4])
-ax[2].set_xticks([3, 3.08, 3.16, 3.24])
-
-ax[0].hist(
-    df.iloc[1]["data"], np.array(range(2 * 149, 2 * 171)) / 200, edgecolor="black"
-)
-ax[0].set_title("SiO")
-ax[0].set_xlim([1.49, 1.7])
-ax[0].set_ylim([0, 22])
-ax[0].set_xticks([1.5, 1.54, 1.58, 1.62, 1.66, 1.7])
-ax[1].hist(
-    df.iloc[2]["data"], np.array(range(248, 271)) / 100, edgecolor="black", alpha=0.5
-)
-ax[1].set_title("OO")
-ax[1].set_xlim([2.48, 2.7])
-ax[1].set_ylim([0, 28])
-ax[1].set_xticks([2.5, 2.54, 2.58, 2.62, 2.66, 2.70])
-plt.tight_layout()
-plt.show()
-
-print(len(df.iloc[0]["data"]))
-print(len(df.iloc[1]["data"]))
-print(len(df.iloc[2]["data"]))
-
-
+CifWriter(s).write_file("/Users/mvenetos/Desktop/refined_zsm12.cif")
 print("completed")
 
-# Initial: chi2 206.23983627103604
-# chi2 20.787865048363095
+#measuring distribution data
+# dist_test_dict = data["Bond_Distances"]
+# distributions = []
+
+# for idx, layer in enumerate(["SiSi", "SiO", "OO"]):
+#     temp = []
+#     print(layer)
+#     for i in dist_test_dict[idx]["pairs"]:
+#         if "min_image_construction" in i.keys():
+#             coord1 = s[i["true_pair"][0]].coords
+#             coord2 = s[i["true_pair"][1]].coords
+#             temp.append(dist_from_coords(coord1, coord2))
+#         else:
+#             temp.append(s.get_distance(i["true_pair"][0], i["true_pair"][1]))
+#         # if layer == 'OO':
+#         # n1 = i['atom 1']
+#         # n2 = i['atom 2']
+#         # print(temp)
+#     # print()
+#     distributions.append({"bond": layer, "data": temp})
+# df = pd.DataFrame(distributions)
+
+
+# fig, ax = plt.subplots(1, 3, figsize=(12, 3.5))
+# ax[2].hist(
+#     df.iloc[0]["data"], np.array(range(147, 163)) / 50, edgecolor="black", alpha=0.5
+# )
+# ax[2].set_title("SiSi")
+# ax[2].set_xlim([2.94, 3.26])
+# ax[2].set_ylim([0, 4])
+# ax[2].set_xticks([3, 3.08, 3.16, 3.24])
+
+# ax[0].hist(
+#     df.iloc[1]["data"], np.array(range(2 * 149, 2 * 171)) / 200, edgecolor="black"
+# )
+# ax[0].set_title("SiO")
+# ax[0].set_xlim([1.49, 1.7])
+# ax[0].set_ylim([0, 22])
+# ax[0].set_xticks([1.5, 1.54, 1.58, 1.62, 1.66, 1.7])
+# ax[1].hist(
+#     df.iloc[2]["data"], np.array(range(248, 271)) / 100, edgecolor="black", alpha=0.5
+# )
+# ax[1].set_title("OO")
+# ax[1].set_xlim([2.48, 2.7])
+# ax[1].set_ylim([0, 28])
+# ax[1].set_xticks([2.5, 2.54, 2.58, 2.62, 2.66, 2.70])
+# plt.tight_layout()
+# plt.show()
+
+# print(len(df.iloc[0]["data"]))
+# print(len(df.iloc[1]["data"]))
+# print(len(df.iloc[2]["data"]))
+
+
+
+
