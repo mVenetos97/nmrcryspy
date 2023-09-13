@@ -164,6 +164,50 @@ class ShieldingTensor_Function(ML_function):
         # self.root = root
         # self.data_file = data_file
 
+    def predict(self, root, data_file):
+        """Function to predict the shielding tensor. This function does not apply
+            the regression calibration.
+
+        Args:
+            root: string containing the data file location for the calculation of the
+                gradient and residual.
+            data_file: string containing the name of the data file to be used for the
+                gradient and residual.
+
+        Returns: list
+        """
+
+        converter = CartesianTensor(formula="ij=ji")
+        model = AtomicTensorModel.load_from_checkpoint(
+            self.checkpoint, strict=True, verbose=False
+        )
+
+        dm = SiNMRDataMoldule(
+            trainset_filename=data_file,
+            valset_filename=data_file,
+            testset_filename=data_file,
+            r_cut=self.r_cut,
+            symmetric=True,
+            root=root,
+        )
+
+        dm.prepare_data()
+        dm.setup()
+
+        loader = dm.val_dataloader()
+
+        return_data = []
+
+        for data_point in loader:
+            graphs, labels = model(data_point)
+
+            pred = graphs["tensor_output"][0]
+
+            pred = converter.to_cartesian(pred)
+    
+            return_data.append(pred)
+        return return_data
+
     def calculate_grad_and_residual(self, root, data_file):
         """Function to calculate the gradient and residual for processing by
         the assemble_residual_and_grad function.
@@ -365,6 +409,48 @@ class JTensor_Function(ML_function):
         self.checkpoint = checkpoint
         # self.root = root
         # self.data_file = data_file
+
+    def predict(self, root, data_file):
+        """Function to predict the J coupling tensor. This function does not apply
+            the regression calibration function.
+
+        Args:
+            root: string containing the data file location for the calculation of the
+                gradient and residual.
+            data_file: string containing the name of the data file to be used for the
+                gradient and residual.
+
+        Returns: list
+        """
+
+        model = AtomicTensorModel.load_from_checkpoint(
+            self.checkpoint, strict=True, verbose=False
+        )
+
+        dm = SiNMRDataMoldule(
+            trainset_filename=data_file,
+            valset_filename=data_file,
+            testset_filename=data_file,
+            r_cut=self.r_cut,
+            symmetric=True,
+            root=root,
+        )
+
+        dm.prepare_data()
+        dm.setup()
+
+        loader = dm.val_dataloader()
+
+        return_data = []
+
+        for data_point in loader:
+            graphs, labels = model(data_point)
+
+            pred = graphs["tensor_output"][0]
+
+            return_data.append(pred)
+
+        return return_data
 
     def calculate_grad_and_residual(self, root, data_file):
         """Function to calculate the gradient and residual for processing by
