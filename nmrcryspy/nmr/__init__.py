@@ -164,7 +164,7 @@ class ShieldingTensor_Function(ML_function):
         # self.root = root
         # self.data_file = data_file
 
-    def predict(self, root, data_file):
+    def predict(self):
         """Function to predict the shielding tensor. This function does not apply
             the regression calibration.
 
@@ -176,7 +176,8 @@ class ShieldingTensor_Function(ML_function):
 
         Returns: list
         """
-
+        data_file = self.data_file
+        root = self.root
         converter = CartesianTensor(formula="ij=ji")
         model = AtomicTensorModel.load_from_checkpoint(
             self.checkpoint, strict=True, verbose=False
@@ -422,7 +423,8 @@ class JTensor_Function(ML_function):
 
         Returns: list
         """
-
+        data_file = self.data_file
+        root = self.root
         model = AtomicTensorModel.load_from_checkpoint(
             self.checkpoint, strict=True, verbose=False
         )
