@@ -411,7 +411,7 @@ class JTensor_Function(ML_function):
         # self.root = root
         # self.data_file = data_file
 
-    def predict(self, root, data_file):
+    def predict(self):
         """Function to predict the J coupling tensor. This function does not apply
             the regression calibration function.
 
