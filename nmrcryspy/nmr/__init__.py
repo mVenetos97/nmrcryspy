@@ -7,8 +7,14 @@ import numpy as np
 import pandas as pd
 import torch
 from e3nn.io import CartesianTensor
-from eigenn.dataset.LSDI import SiNMRDataMoldule
-from eigenn.model_factory.atomic_tensor_model import AtomicTensorModel
+
+try:
+    from eigenn.dataset.LSDI import SiNMRDataMoldule
+    from eigenn.model_factory.atomic_tensor_model import AtomicTensorModel
+except:
+    from matten.dataset.LSDI import SiNMRDataMoldule
+    from matten.model_factory.atomic_tensor_model import AtomicTensorModel
+
 from monty.serialization import dumpfn
 from monty.serialization import loadfn
 
@@ -205,7 +211,7 @@ class ShieldingTensor_Function(ML_function):
             pred = graphs["tensor_output"][0]
 
             pred = converter.to_cartesian(pred)
-    
+
             return_data.append(pred)
         return return_data
 
