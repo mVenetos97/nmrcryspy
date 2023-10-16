@@ -44,7 +44,7 @@ def J_regr(J):
 
     Returns: float
     """
-    return (1.4217 * J) + 3.7953
+    return (2.1608 * J) - 2.4614 #(1.4217 * J) + 3.7953
 
 
 def randomword(length):
